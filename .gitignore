@@ -1,0 +1,48 @@
+# Django-related files
+*.pyc
+__pycache__/
+*.sqlite3
+*.pyo
+*.pyc
+*.pyd
+*.pyo
+*.pyc
+*.egg-info/
+*.egg
+
+# Development files
+*.log
+*.pyc
+*.bak
+*.swp
+*.~*
+
+# IDE files
+*.idea/
+.vscode/
+*.pyc
+*.swo
+*.swp
+*.bak
+*.sublime-workspace
+*.sublime-project
+
+# Other files
+*.DS_Store
+*.env
+*.bak
+*.zip
+*.tar.gz
+*.tar.bz2
+*.tar
+*.gz
+*.log
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+*.egg-info/
+*.egg
+
+# Virtual environment
+venv/
