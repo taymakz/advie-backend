@@ -46,3 +46,7 @@ __pycache__/
 
 # Virtual environment
 venv/
+
+
+# Media
+media/

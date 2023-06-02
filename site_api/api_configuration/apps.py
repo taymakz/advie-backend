@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class SiteAccountConfig(AppConfig):
+class ApiConfigurationConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'site_account'
+    name = 'site_api.api_configuration'

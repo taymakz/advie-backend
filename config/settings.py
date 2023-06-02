@@ -32,16 +32,32 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
 
-    # Local Apps
-    'site_account',
+    # Local Apps ------------------
 
-    # External Apps
+    # API Section
+    'site_api.api_configuration',
+
+    # Settings Section
+    'site_setting.website_management',
+    'site_setting.website_banner',
+
+    # Users Section
+    'site_account.user_management',
+    'site_account.user_addresses',
+
+    # Notification Section
+    'site_notification.verification_notification',
+    'site_notification.order_notification',
+    'site_notification.user_notification',
+    'site_notification.announcement_notification',
+
+    # External Apps ------------------
     'mptt',
     'sorl.thumbnail',
     'ckeditor',
     'ckeditor_uploader',
 ]
-AUTH_USER_MODEL = 'site_account.User'
+AUTH_USER_MODEL = 'user_management.User'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -74,23 +90,23 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Railway Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'railway',
-        'USER': 'postgres',
-        'PASSWORD': 'xfsS1utENpAUb55wMNVe',
-        'HOST': 'containers-us-west-70.railway.app',
-        'PORT': '6893',
-    }
-}
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.getenv('DATABASE_NAME'),
+#         'USER': os.getenv('DATABASE_USER'),
+#         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+#         'HOST': os.getenv('DATABASE_HOST'),
+#         'PORT': os.getenv('DATABASE_PORT'),
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',

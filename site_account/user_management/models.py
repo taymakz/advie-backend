@@ -4,15 +4,18 @@ from django.contrib.auth.hashers import make_password
 
 from django.db import models
 from django.utils.crypto import get_random_string
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+
 from site_utils.image.get_file_ext import get_filename_ext
 
-from sorl.thumbnail import ImageField as SorlImageField
+from sorl.thumbnail import ImageField
 
 import os
 from dotenv import load_dotenv
 
 # Load the environment variables from the .env file
 load_dotenv()
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email=None, phone=None, password=None, **extra_fields):
@@ -42,7 +45,7 @@ def upload_profile_path(instance, filename):
 
 
 class User(AbstractUser):
-    profile = SorlImageField(upload_to=upload_profile_path, default='images/profile/default_profile.png')
+    profile = ImageField(upload_to=upload_profile_path, default='images/profile/default_profile.png')
     email = models.EmailField(unique=True, blank=True, null=True)
     phone = models.CharField(max_length=11, blank=True, null=True, unique=True)
     national_code = models.CharField(max_length=10, null=True, blank=True)
@@ -52,6 +55,11 @@ class User(AbstractUser):
     USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = []
     objects = UserManager()
+
+    def revoke_all_tokens(self):
+        tokens = OutstandingToken.objects.filter(user_id=self.id)
+        for token in tokens:
+            t, _ = BlacklistedToken.objects.get_or_create(token=token)
 
     def is_verify(self):
         return self.verified
