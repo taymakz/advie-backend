@@ -20,3 +20,9 @@ class ResponseMessage(Enum):
     AUTH_WRONG_OTP = "کد تایید نادرست میباشد"
     AUTH_LOGIN_SUCCESSFULLY = "با موفقیت وارد شدید"
     AUTH_LOGOUT_SUCCESSFULLY = "با موفقیت خارج شدید"
+
+    # Reset Password
+    RESET_PASSWORD_USER_NOT_FOUND = "کاربری با مشخصات وارد شده یافت نشد"
+    RESET_PASSWORD_SUCCESSFULLY = "کلمه عبور جدید با موفقیت ثبت شد"
+    PASSWORD_LENGTH_INVALID = "کلمه عبور باید حداقل 6 و حداکثر 16 حرف باشد"
+    PASSWORD_CONFIRM_MISMATCH = "کلمه های عبور یکسان نمیباشند"

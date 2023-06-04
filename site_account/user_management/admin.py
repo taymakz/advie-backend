@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from . import models
 from django.utils.html import format_html
-from sorl.thumbnail.admin import AdminImageMixin
+
 
 
 class UserForm(forms.ModelForm):
@@ -13,7 +13,7 @@ class UserForm(forms.ModelForm):
         'national_code','last_login','password')
 
 
-class UserAdmin(AdminImageMixin,admin.ModelAdmin):
+class UserAdmin(admin.ModelAdmin):
     form = UserForm
     list_display = (
     'profile_image', 'username', 'email', 'phone', 'first_name', 'last_name', 'is_superuser', 'is_active',)

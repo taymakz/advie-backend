@@ -5,13 +5,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
+from site_account.user_management.models import User
 from site_account.user_management.serializers import UserSerializer
 from site_api.api_configuration.enums import ResponseMessage
 from site_api.api_configuration.response import BaseResponse
-from site_account.user_management.models import User
 from site_notification.verification_notification.models import VerifyOTPService
 from site_utils.validator.regexes import validate_phone, validate_email
 
@@ -211,6 +210,110 @@ class OTPAuthenticationView(APIView):
 
 
 # User Reset Password -------------------------
+class ForgotPasswordCheckView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request, format=None):
+        username = request.data.get('username')
+
+        try:
+            validate_phone(username)
+            if len(username) == 10:
+                username = f"0{username}"
+
+            otp_type = 'PHONE'
+            message = ResponseMessage.PHONE_OTP_SENT.value
+        except:
+            try:
+                validate_email(username)
+                otp_type = 'EMAIL'
+                message = ResponseMessage.EMAIL_OTP_SENT.value
+            except:
+                return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                    message=ResponseMessage.NOT_VALID_EMAIL_OR_PHONE.value)
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.RESET_PASSWORD_USER_NOT_FOUND.value)
+
+        otp_service, _ = VerifyOTPService.objects.get_or_create(
+            type=otp_type, to=username, usage='RESET_PASSWORD')
+
+        if otp_service.is_expired():
+            otp_service.delete()
+            otp_service = None
+
+        if not otp_service:
+            otp_service = VerifyOTPService.objects.create(type=otp_type, to=username, usage='RESET_PASSWORD')
+            otp_service.send_otp()
+
+        return BaseResponse(status=status.HTTP_200_OK,
+                            message=message.format(username=username))
+
+
+class ForgotPasswordOTPView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request, format=None):
+        username = request.data.get('username', None)
+        otp = request.data.get('otp', None)
+
+        if not username or not otp:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
+
+        username_type = 'PHONE' if validate_phone(username) else 'EMAIL'
+        user = User.objects.filter(username=username).first()
+
+        if not user:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.RESET_PASSWORD_USER_NOT_FOUND.value)
+
+        otp_service = VerifyOTPService.objects.filter(type=username_type, to=username, code=otp,
+                                                      usage='RESET_PASSWORD').order_by('-id').first()
+
+        if not otp_service or otp_service.is_expired():
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.AUTH_WRONG_OTP.value)
+
+        otp_service.delete()
+        user.generate_forgot_password_token()
+
+        return BaseResponse(data={'token': user.forgot_password_token}, status=status.HTTP_200_OK)
+
+
+class ForgotPasswordResetView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request, format=None):
+        username = request.data.get('username')
+        token = request.data.get('token')
+        token = token.strip('"')
+        password = request.data.get('password')
+        confirm_password = request.data.get('confirm_password')
+        if len(password) < 6 or len(password) > 16:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.PASSWORD_LENGTH_INVALID.value)
+        if password != confirm_password:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.PASSWORD_CONFIRM_MISMATCH.value)
+        user = User.objects.filter(username=username).first()
+
+        if (user and token) and (user.forgot_password_token == token):
+            user.set_password(password)
+            user.revoke_all_tokens()
+            user.generate_forgot_password_token()
+            user.save()
+            return BaseResponse(status=status.HTTP_200_OK,
+                                message=ResponseMessage.RESET_PASSWORD_SUCCESSFULLY.value)
+        else:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
 
 
 # Request OTP For User

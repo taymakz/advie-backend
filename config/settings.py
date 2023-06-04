@@ -4,6 +4,7 @@ from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
+
 # Load the environment variables from the .env file
 load_dotenv()
 
@@ -19,7 +20,6 @@ CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if 
 FRONTEND_URL = os.environ.get('FRONTEND_URL')
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -41,9 +41,21 @@ INSTALLED_APPS = [
     'site_setting.website_management',
     'site_setting.website_banner',
 
+    # Pages Section
+    'site_pages.home_data',
+
     # Users Section
     'site_account.user_management',
     'site_account.user_addresses',
+
+    # Shop Section
+    'site_shop.transaction_management',
+    'site_shop.order_management',
+    'site_shop.product_management',
+    'site_shop.category_management',
+    'site_shop.shipping_management',
+    'site_shop.refund_management',
+    'site_shop.coupon_management',
 
     # Notification Section
     'site_notification.verification_notification',
@@ -53,10 +65,13 @@ INSTALLED_APPS = [
 
     # External Apps ------------------
     'mptt',
-    'sorl.thumbnail',
+    'imagekit',
     'ckeditor',
     'ckeditor_uploader',
+
+
 ]
+
 AUTH_USER_MODEL = 'user_management.User'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
