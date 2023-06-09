@@ -17,6 +17,7 @@ class ProductVariantInLine(admin.TabularInline):
     model = models.ProductVariant
     extra = 1
 
+    ordering = ['order']
 
 class ProductPropertyInLine(admin.TabularInline):
     model = models.ProductProperty
@@ -36,7 +37,7 @@ class CategoryForm(forms.ModelForm):
 
 class ProductAdmin(admin.ModelAdmin):
     list_filter = ['category', 'is_active']
-    list_display = ['title_ir', 'is_active',
+    list_display = ['__str__', 'is_active',
                     'visit_count']
     list_editable = ['is_active']
     search_fields = ['title_ir', 'title_en']

@@ -4,7 +4,23 @@ from django.utils.html import strip_tags
 from django.conf import settings
 
 
-def send_email(to, context, template_name='emails/email_otp.html', subject="راکافا | کد تایید"):
+def send_otp_email(to, context, template_name='emails/email_otp.html', subject="راکافا | کد تایید"):
+    try:
+        html_message = render_to_string(template_name, context)
+        plain_message = strip_tags(html_message)
+        from_email = settings.EMAIL_HOST_USER
+        send_mail(subject, plain_message, from_email, [to], html_message=html_message)
+    except:
+        pass
+def send_newsletter_email(to, context, template_name='emails/email_otp.html', subject="راکافا | کد تایید"):
+    try:
+        html_message = render_to_string(template_name, context)
+        plain_message = strip_tags(html_message)
+        from_email = settings.EMAIL_HOST_USER
+        send_mail(subject, plain_message, from_email, [to], html_message=html_message)
+    except:
+        pass
+def send_verify_newsletter_email(to, context, template_name='emails/email_otp.html', subject="راکافا | کد تایید"):
     try:
         html_message = render_to_string(template_name, context)
         plain_message = strip_tags(html_message)

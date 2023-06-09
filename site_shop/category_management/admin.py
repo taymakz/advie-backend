@@ -8,7 +8,7 @@ from . import models
 class CategoryBannerInLine(admin.StackedInline):
     model = models.CategoryBanner
     extra = 0
-
+    ordering = ['order']
 
 class CategoryAdmin(MPTTModelAdmin):
     list_display = ('title_en', 'title_ir', 'parent', 'slug', 'is_active')

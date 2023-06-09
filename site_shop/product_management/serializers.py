@@ -24,10 +24,10 @@ class VariantValueSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
 class ProductVariantSerializer(serializers.ModelSerializer):
     type = VariantTypeSerializer()
     value = VariantValueSerializer()
+    special_price = serializers.SerializerMethodField()
 
     class Meta:
         model = models.ProductVariant
@@ -43,16 +43,22 @@ class ProductVariantSerializer(serializers.ModelSerializer):
             'is_special',
         )
 
+    def get_special_price(self, obj):
+        return obj.get_special_price
+
 
 class ProductsCategorySerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
+
     class Meta:
         model = Category
         fields = (
             'id', 'title_ir', 'title_en', 'display_title', 'url', 'is_active', 'parent')
 
-    def get_url(self,obj):
+    def get_url(self, obj):
         return obj.get_absolute_url()
+
+
 class PropertySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Property
@@ -90,67 +96,70 @@ class ProductPropertySerializer(serializers.ModelSerializer):
 #         )
 
 
-# class ProductDetailSerializer(serializers.ModelSerializer):
-#     variant_type = VariantTypeSerializer()
-#     category = ProductsCategorySerializer()
-#     variants = ProductVariantSerializer(many=True, read_only=True)
-#     properties = ProductPropertySerializer(many=True, read_only=True)
-#     related_products = serializers.SerializerMethodField()
-#     image = serializers.SerializerMethodField()
-#     breadcrumbs = serializers.SerializerMethodField()
-#     url = serializers.SerializerMethodField()
-#
-#     class Meta:
-#         model = models.Product
-#         fields = (
-#             'id',
-#             'url',
-#             'title_ir',
-#             'title_en',
-#             'slug',
-#             'description',
-#             'sku',
-#             'suggested',
-#             'is_available_in_stock',
-#             'variant_type',
-#             'category',
-#             'brand',
-#             'color',
-#             'medias',
-#             'variants',
-#             'image',
-#             'properties',
-#             'related_products',
-#             'breadcrumbs',
-#         )
-#
-#     def get_url(self, obj):
-#         return obj.get_absolute_url()
-#
-#     def get_breadcrumbs_function(self, category):
-#         breadcrumbs = []
-#         while category:
-#             breadcrumbs.append({'title': category.title_ir, 'url': category.get_absolute_url()})
-#             category = category.parent
-#         return reversed(breadcrumbs)
-#
-#     def get_breadcrumbs(self, obj):
-#         return self.get_breadcrumbs_function(obj.category)
-#
-#     def get_image(self, obj):
-#         return obj.image.name
-#
-#     def get_related_products(self, obj):
-#         category = obj.category
-#         related_products = models.Product.objects.filter(
-#             category__in=category.get_descendants(include_self=True)
-#         ).exclude(id=obj.id)[:20]
-#         serializer = ProductListSerializer(related_products, many=True)
-#         return serializer.data
+class ProductDetailSerializer(serializers.ModelSerializer):
+    variant_type = VariantTypeSerializer()
+    variants = ProductVariantSerializer(many=True, read_only=True)
+    properties = ProductPropertySerializer(many=True, read_only=True)
+    image = serializers.SerializerMethodField()
+    breadcrumbs = serializers.SerializerMethodField()
+    url = serializers.SerializerMethodField()
+    longest_special_price_end_date = serializers.SerializerMethodField()
+    longest_special_price_start_date = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.Product
+        fields = (
+            'id',
+            'url',
+            'image',
+            'title_ir',
+            'title_en',
+            'description',
+            'sku',
+            'is_available_in_stock',
+            'variant_type',
+            'variants',
+            'longest_special_price_end_date',
+            'longest_special_price_start_date',
+            'properties',
+            'breadcrumbs',
+        )
+
+    def get_longest_special_price_end_date(self, obj):
+        return obj.get_longest_special_price_end_date
+
+    def get_longest_special_price_start_date(self, obj):
+        return obj.get_longest_special_price_start_date
+
+    def get_url(self, obj):
+        return obj.get_absolute_url()
+
+    def get_breadcrumbs_function(self, category):
+        breadcrumbs = []
+        visited_categories = set()
+        for category in category.all():
+            while category and category not in visited_categories:
+                breadcrumbs.append({'title': category.title_ir, 'url': category.get_absolute_url()})
+                visited_categories.add(category)
+                category = category.parent
+        return breadcrumbs
+
+    def get_breadcrumbs(self, obj):
+        return self.get_breadcrumbs_function(obj.category)
+
+    def get_image(self, obj):
+        return obj.image.name
+
+    # def get_related_products(self, obj):
+    #     category = obj.category
+    #     related_products = models.Product.objects.filter(
+    #         category__in=category.get_descendants(include_self=True)
+    #     ).exclude(id=obj.id)[:20]
+    #     serializer = ProductCardSerializer(related_products, many=True)
+    #     return serializer.data
 
 
 class ProductCardSerializer(serializers.ModelSerializer):
-
     category = ProductsCategorySerializer(many=True)
     price = serializers.SerializerMethodField()
     special_price = serializers.SerializerMethodField()
@@ -160,6 +169,8 @@ class ProductCardSerializer(serializers.ModelSerializer):
     is_available_in_stock = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
     url = serializers.SerializerMethodField()
+    longest_special_price_end_date = serializers.SerializerMethodField()
+    longest_special_price_start_date = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Product
@@ -173,11 +184,18 @@ class ProductCardSerializer(serializers.ModelSerializer):
             'special_price',
             'special_price_percent',
             'has_any_special_price',
+            'longest_special_price_end_date',
+            'longest_special_price_start_date',
             'final_price',
             'sku',
             'is_available_in_stock',
             'category',
         )
+
+    def get_longest_special_price_end_date(self, obj):
+        return obj.get_longest_special_price_end_date
+    def get_longest_special_price_start_date(self, obj):
+        return obj.get_longest_special_price_start_date
 
     def get_url(self, obj):
         return obj.get_absolute_url()
@@ -222,6 +240,5 @@ class SearchProductSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         return obj.image.name
-
 
 

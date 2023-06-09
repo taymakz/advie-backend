@@ -15,6 +15,7 @@ from site_notification.verification_notification.models import VerifyOTPService
 from site_utils.validator.regexes import validate_phone, validate_email
 
 
+
 # Get Current User Detail
 class RequestCurrentUserView(RetrieveAPIView):
     serializer_class = UserSerializer
@@ -45,7 +46,7 @@ class AuthenticationCheckView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, format=None):
-        username = request.data.get('username')
+        username = request.data.get('username').lower()
 
         if not username:
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
@@ -56,7 +57,7 @@ class AuthenticationCheckView(APIView):
                 username = f"0{username}"
             otp_service = VerifyOTPService.objects.filter(type='PHONE', to=username, usage='AUTHENTICATE').order_by(
                 '-id').first()
-            user = User.objects.filter(username=username).first()
+            user = User.objects.filter(phone=username).first()
 
             if not user or not user.has_password():
                 if otp_service:
@@ -80,7 +81,7 @@ class AuthenticationCheckView(APIView):
         elif validate_email(username):
             otp_service = VerifyOTPService.objects.filter(type='EMAIL', to=username, usage='AUTHENTICATE').order_by(
                 '-id').first()
-            user = User.objects.filter(username=username).first()
+            user = User.objects.filter(email=username).first()
 
             if not user or not user.has_password():
                 if otp_service:
@@ -113,7 +114,7 @@ class PasswordAuthenticationView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, format=None):
-        username = request.data.get('username', None)
+        username = request.data.get('username', None).lower()
         password = request.data.get('password', None)
 
         if not username or not password:
@@ -121,7 +122,9 @@ class PasswordAuthenticationView(APIView):
                                 message=ResponseMessage.FAILED.value)
 
         try:
-            user = User.objects.get(username=username)
+            username_type = 'PHONE' if validate_phone(username) else 'EMAIL'
+            user = User.objects.get(phone=username) if username_type == 'PHONE' else User.objects.get(
+                email=username)
             if not user.check_password(password):
                 return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                     message=ResponseMessage.AUTH_WRONG_PASSWORD.value)
@@ -150,20 +153,20 @@ class OTPAuthenticationView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, format=None):
-        username = request.data.get('username', None)
+        username = request.data.get('username', None).lower()
         otp = request.data.get('otp', None)
 
         if not username or not otp:
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.FAILED.value)
-        username_type = None
-        if validate_phone(username):
-            username_type = 'PHONE'
-        elif validate_email(username):
-            username_type = 'EMAIL'
+        username_type = 'PHONE' if validate_phone(username) else 'EMAIL'
+
         user = None
         try:
-            user = User.objects.get(username=username)
+
+            user = User.objects.get(phone=username) if username_type == 'PHONE' else User.objects.get(
+                email=username)
+
         except User.DoesNotExist:
             otp_service = VerifyOTPService.objects.filter(type=username_type, to=username, code=otp,
                                                           usage='AUTHENTICATE').order_by(
@@ -215,26 +218,27 @@ class ForgotPasswordCheckView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, format=None):
-        username = request.data.get('username')
+        username = request.data.get('username').lower()
 
-        try:
-            validate_phone(username)
+        if validate_phone(username):
             if len(username) == 10:
                 username = f"0{username}"
 
             otp_type = 'PHONE'
             message = ResponseMessage.PHONE_OTP_SENT.value
-        except:
-            try:
-                validate_email(username)
-                otp_type = 'EMAIL'
-                message = ResponseMessage.EMAIL_OTP_SENT.value
-            except:
-                return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
-                                    message=ResponseMessage.NOT_VALID_EMAIL_OR_PHONE.value)
+
+
+        elif validate_email(username):
+            otp_type = 'EMAIL'
+            message = ResponseMessage.EMAIL_OTP_SENT.value
+        else:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.NOT_VALID_EMAIL_OR_PHONE.value)
 
         try:
-            user = User.objects.get(username=username)
+            username_type = 'PHONE' if validate_phone(username) else 'EMAIL'
+            user = User.objects.get(phone=username) if username_type == 'PHONE' else User.objects.get(
+                email=username)
         except User.DoesNotExist:
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.RESET_PASSWORD_USER_NOT_FOUND.value)
@@ -259,7 +263,7 @@ class ForgotPasswordOTPView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, format=None):
-        username = request.data.get('username', None)
+        username = request.data.get('username', None).lower()
         otp = request.data.get('otp', None)
 
         if not username or not otp:
@@ -267,7 +271,8 @@ class ForgotPasswordOTPView(APIView):
                                 message=ResponseMessage.FAILED.value)
 
         username_type = 'PHONE' if validate_phone(username) else 'EMAIL'
-        user = User.objects.filter(username=username).first()
+        user = User.objects.filter(phone=username).first() if username_type == 'PHONE' else User.objects.filter(
+            email=username).first()
 
         if not user:
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
@@ -291,7 +296,7 @@ class ForgotPasswordResetView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, format=None):
-        username = request.data.get('username')
+        username = request.data.get('username').lower()
         token = request.data.get('token')
         token = token.strip('"')
         password = request.data.get('password')
@@ -302,9 +307,11 @@ class ForgotPasswordResetView(APIView):
         if password != confirm_password:
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.PASSWORD_CONFIRM_MISMATCH.value)
-        user = User.objects.filter(username=username).first()
+        username_type = 'PHONE' if validate_phone(username) else 'EMAIL'
+        user = User.objects.filter(phone=username).first() if username_type == 'PHONE' else User.objects.filter(
+            email=username).first()
 
-        if (user and token) and (user.forgot_password_token == token):
+        if (user and token) and (str(user.forgot_password_token) == token):
             user.set_password(password)
             user.revoke_all_tokens()
             user.generate_forgot_password_token()
@@ -323,7 +330,7 @@ class RequestOTPView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, format=None):
-        to = request.data.get('to', None)
+        to = request.data.get('to', None).lower()
         otp_usage = request.data.get('otp_usage', None)
 
         if not to or not otp_usage:

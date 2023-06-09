@@ -1,28 +1,40 @@
-from django.shortcuts import render
 from rest_framework import status
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
 
-from api_configuration.enums import ResponseMessage
-from api_configuration.response import BaseResponse
+from site_api.api_configuration.enums import ResponseMessage
+from site_api.api_configuration.response import BaseResponse, PaginationApiResponse
+from site_shop.product_management.filters import ProductFilter
 from site_shop.product_management.models import Product
-from site_shop.product_management.serializers import ProductCardSerializer
+from site_shop.product_management.serializers import ProductDetailSerializer,ProductCardSerializer
 
 
-# class ProductListAPIView(ListAPIView):
-#     authentication_classes = []
-#     permission_classes = [AllowAny]
-#     queryset = Product.objects.filter(is_active=True).all()
-#     serializer_class = ProductCardSerializer
-#
-#     def list(self, request, *args, **kwargs):
-#         try:
-#             products = self.get_queryset()
-#             serializer = self.get_serializer(products, many=True)
-#             response_data = serializer.data
-#             return BaseResponse(data=response_data, status=status.HTTP_200_OK,
-#                                 message=ResponseMessage.SUCCESS.value)
-#
-#         except:
-#             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
-#                                 message=ResponseMessage.FAILED.value)
+class ProductSearchView(ListAPIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    serializer_class = ProductCardSerializer
+    queryset = Product.objects.all()
+    pagination_class = PaginationApiResponse
+    filterset_class = ProductFilter
+
+
+
+class ProductDetailAPIView(RetrieveAPIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    queryset = Product.objects.filter(is_active=True)
+    serializer_class = ProductDetailSerializer
+    lookup_field = 'sku'
+    lookup_url_kwarg = 'sku'
+
+    def get(self, request, *args, **kwargs):
+        try:
+            product = self.get_object()
+            serializer = self.get_serializer(product)
+            response_data = serializer.data
+            return BaseResponse(data=response_data, status=status.HTTP_200_OK,
+                                message=ResponseMessage.SUCCESS.value)
+        except:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)

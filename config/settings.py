@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'site_notification.announcement_notification',
 
     # External Apps ------------------
+    'django_filters',
     'mptt',
     'imagekit',
     'ckeditor',
@@ -160,6 +161,11 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication'
     ],
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'site_api.api_configuration.response.PaginationApiResponse',
+    'PAGE_SIZE': 100
 }
 
 SIMPLE_JWT = {

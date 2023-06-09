@@ -3,8 +3,10 @@ from random import randint
 from ckeditor_uploader.fields import RichTextUploadingField
 from django.core.cache import cache
 from django.db import models
+from django.db.models import Case, BooleanField, Value, When, Max
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
 from imagekit.models import ProcessedImageField
@@ -40,7 +42,7 @@ class Product(models.Model):
     image = ProcessedImageField(upload_to=upload_product_path,
                                 default='images/products/default_product.png',
                                 processors=[ResizeToFill(400, 400)],
-                                format='WEBP',
+                                format='JPEG',
                                 options={'quality': 90})
     title_ir = models.CharField(max_length=255)
     title_en = models.CharField(max_length=255)
@@ -54,18 +56,71 @@ class Product(models.Model):
     date_updated = models.DateTimeField(auto_now=True, editable=False)
 
     @property
+    def get_longest_special_price_end_date(self):
+        current_time = timezone.now()
+        active_variants = self.variants.filter(
+            special_price__isnull=False,
+            special_price_start_date__lte=current_time,
+            special_price_end_date__gte=current_time
+        ).order_by('-special_price_end_date')
+
+        if active_variants.exists():
+            longest_end_date = active_variants.first().special_price_end_date
+            formatted_date = longest_end_date.strftime("%a %b %d %Y %H:%M:%S GMT%z (%Z)")
+            return formatted_date
+        else:
+            return None
+
+    @property
+    def get_longest_special_price_start_date(self):
+        current_time = timezone.now()
+        active_variants =  self.variants.filter(
+            special_price__isnull=False,
+            special_price_start_date__lte=current_time,
+            special_price_end_date__gte=current_time
+        ).annotate(
+            start_date=Max('special_price_start_date')
+        ).order_by('start_date')
+
+        if active_variants.exists():
+            longest_variant = active_variants.first()
+            start_date = longest_variant.special_price_start_date
+            formatted_date = start_date.strftime("%a %b %d %Y %H:%M:%S GMT%z (%Z)")
+            return formatted_date
+        else:
+            return None
+
+    @property
     def is_available_in_stock(self):
         for variant in self.variants.filter(is_active=True):
             if variant.stock > 0:
                 return True
         return False
 
+    # @property
+    # def has_special_price(self):
+    #     for variant in self.variants.filter(
+    #             special_price__isnull=False,
+    #             special_price_start_date__lte=timezone.now(),
+    #             special_price_end_date__gte=timezone.now()).all():
+    #         if (variant.special_price or 0) > 0:
+    #             return True
+    #     return False
     @property
     def has_special_price(self):
-        for variant in self.variants.all():
-            if (variant.special_price or 0) > 0:
-                return True
-        return False
+        variants_with_special_price = self.variants.filter(
+            special_price__isnull=False,
+            special_price_start_date__lte=timezone.now(),
+            special_price_end_date__gte=timezone.now()
+        ).annotate(
+            has_special_price=Case(
+                When(special_price__gt=0, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField()
+            )
+        ).values_list('has_special_price', flat=True)
+
+        return any(variants_with_special_price)
 
     def get_variants(self):
         return self.variants.all()
@@ -93,12 +148,17 @@ class Product(models.Model):
     @property
     def minimum_variant_special_price(self):
         variant = self.minimum_variant()
-        return variant.special_price if variant else None
+        if variant and (variant.special_price_start_date and variant.special_price_end_date) \
+                and (variant.special_price_start_date <= timezone.now() <= variant.special_price_end_date):
+            return variant.special_price if variant else None
+        else:
+            return None
 
     @property
     def minimum_variant_special_price_percent(self):
         variant = self.minimum_variant()
-        if variant:
+        if variant and variant.special_price_start_date and variant.special_price_end_date and variant.special_price_start_date <= timezone.now() <= variant.special_price_end_date:
+
             return int((variant.price - variant.special_price) / variant.price * 100) if variant.special_price else None
         else:
             return None
@@ -106,7 +166,12 @@ class Product(models.Model):
     @property
     def minimum_variant_is_special(self):
         variant = self.minimum_variant()
-        return variant.is_special if variant else False
+        if variant and (variant.special_price_start_date and variant.special_price_end_date) \
+                and (variant.special_price_start_date <= timezone.now() <= variant.special_price_end_date):
+
+            return variant.is_special if variant else False
+        else:
+            return False
 
     @property
     def minimum_variant_final_price(self):
@@ -125,7 +190,7 @@ class Product(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.title_ir
+        return f"{self.title_ir} - {self.title_en}"
 
 
 @receiver(pre_save, sender=Product)
@@ -170,25 +235,47 @@ class ProductVariant(models.Model):
     value = models.ForeignKey(VariantValue, on_delete=models.CASCADE, null=True, blank=True)
     price = models.PositiveIntegerField(default=0)
     special_price = models.PositiveIntegerField(null=True, blank=True)
+    special_price_start_date = models.DateTimeField(null=True, blank=True)
+    special_price_end_date = models.DateTimeField(null=True, blank=True)
     stock = models.IntegerField(default=0)
+    order = models.IntegerField(default=1, blank=True, null=True)
     is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ('order',)
+
+    def is_special_price_active(self):
+        if self.special_price and self.special_price_start_date and self.special_price_end_date and self.special_price_start_date <= timezone.now() <= self.special_price_end_date:
+            return True
+        return False
 
     @property
     def special_price_percent(self):
-        if self.price and self.special_price:
+
+        if self.price and self.special_price and self.special_price_start_date and self.special_price_end_date and self.special_price_start_date <= timezone.now() <= self.special_price_end_date:
             return int((self.price - self.special_price) / self.price * 100)
         else:
             return None
 
     @property
     def is_special(self):
-        if (self.special_price or 0) > 0:
+
+        if ((
+                    self.special_price or 0) > 0) and self.special_price_start_date and self.special_price_end_date and self.special_price_start_date <= timezone.now() <= self.special_price_end_date:
             return True
         return False
 
     @property
+    def get_special_price(self):
+
+        if self.special_price and self.special_price_start_date and self.special_price_end_date and self.special_price_start_date <= timezone.now() <= self.special_price_end_date:
+            return self.special_price
+        else:
+            return None
+
+    @property
     def final_price(self):
-        if self.special_price is not None:
+        if self.special_price and self.special_price_start_date and self.special_price_end_date and self.special_price_start_date <= timezone.now() <= self.special_price_end_date:
             return self.special_price
         else:
             return self.price
@@ -225,7 +312,7 @@ class Property(models.Model):
 class ProductProperty(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='properties')
     property = models.ForeignKey(Property, on_delete=models.CASCADE)
-    value = models.CharField(max_length=100)
+    value = RichTextUploadingField(blank=True, null=True)
 
     def __str__(self):
         return self.property.name

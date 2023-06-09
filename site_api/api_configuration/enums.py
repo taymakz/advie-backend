@@ -14,6 +14,11 @@ class ResponseMessage(Enum):
     # Notification Messages
     PHONE_OTP_SENT = "کد تایید به شماره {username} پیامک شد"
     EMAIL_OTP_SENT = "کد تایید به ایمیل {username} ارسال شد"
+    EMAIL_NEWSLETTER_ACTIVATION_LINK_SENT = "لینک فعال سازی به ایمیل مورد نظر ارسال شد"
+    EMAIL_NEWSLETTER_ACTIVATION_SUCCESS = "ایمیل شما با موفقیت تایید شد"
+    EMAIL_NEWSLETTER_ACTIVATION_FAILED = "لینک فعال سازی نامعتبر و یا منقضی شده است"
+    EMAIL_NEWSLETTER_EXIST = "ایمیل وارد شده قبلا ثبت شده است"
+    EMAIL_NEWSLETTER_ACTIVATION_LINK_ALREADY_SENT = "لینک فعال سازی به ایمیل مورد نظر قبلا ارسال شده است"
 
     # Authentication
     AUTH_WRONG_PASSWORD = "کلمه عبور نادرست میباشد"
