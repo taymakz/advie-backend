@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'imagekit',
     'ckeditor',
     'ckeditor_uploader',
+    'jalali_date'
 
 
 ]
