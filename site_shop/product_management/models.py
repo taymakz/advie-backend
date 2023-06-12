@@ -42,7 +42,7 @@ class Product(models.Model):
     image = ProcessedImageField(upload_to=upload_product_path,
                                 default='images/products/default_product.png',
                                 processors=[ResizeToFill(400, 400)],
-                                format='JPEG',
+                                format='WEBP',
                                 options={'quality': 90})
     title_ir = models.CharField(max_length=255)
     title_en = models.CharField(max_length=255)
