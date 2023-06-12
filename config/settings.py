@@ -166,7 +166,7 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend',
     ),
     'DEFAULT_PAGINATION_CLASS': 'site_api.api_configuration.response.PaginationApiResponse',
-    'PAGE_SIZE': 100
+    'PAGE_SIZE': 20
 }
 
 SIMPLE_JWT = {

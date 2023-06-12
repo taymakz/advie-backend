@@ -31,3 +31,10 @@ class ResponseMessage(Enum):
     RESET_PASSWORD_SUCCESSFULLY = "کلمه عبور جدید با موفقیت ثبت شد"
     PASSWORD_LENGTH_INVALID = "کلمه عبور باید حداقل 6 و حداکثر 16 حرف باشد"
     PASSWORD_CONFIRM_MISMATCH = "کلمه های عبور یکسان نمیباشند"
+
+    # Orders
+    ORDER_ADDED_TO_CART_SUCCESSFULLY = "محصول به سبد خرید اضافه شد"
+    ORDER_ITEM_DOES_NOT_EXIST_MORE_THAN = "بیشتر از {stock} عدد موجود نمی باشد"
+    ORDER_ITEM_COUNT_INCREASED = "به تعداد محصول در سبد خرید اضافه شد"
+    ORDER_ITEM_COUNT_DECREASED = "از تعداد محصول در سبد خرید کم شد"
+    ORDER_ITEM_REMOVED = "محصول از سبد خرید حذف شد"

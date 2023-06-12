@@ -1,4 +1,3 @@
-import os
 import uuid
 
 from django.contrib.auth.hashers import make_password
@@ -8,15 +7,11 @@ from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils.crypto import get_random_string
-from dotenv import load_dotenv
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
 from site_utils.image.get_file_ext import get_filename_ext
-
-# Load the environment variables from the .env file
-load_dotenv()
 
 
 class UserManager(BaseUserManager):
@@ -75,12 +70,6 @@ class User(AbstractUser):
     def is_verify(self):
         return self.verified
 
-    def has_password(self):
-        return not self.check_password(os.environ.get('SECRET_DEFAULT_PASSWORD_FOR_USER'))
-
-    def set_default_password(self):
-        self.set_password(os.environ.get('SECRET_DEFAULT_PASSWORD_FOR_USER'))
-
     def save(self, *args, **kwargs):
         if self.password and not self.password.startswith('pbkdf2_sha256'):
             self.password = make_password(self.password)
@@ -106,3 +95,8 @@ def delete_old_image(sender, instance, **kwargs):
     if new_image != old_image:
         # Delete the old image from storage
         old_object.profile.delete(save=False)
+
+
+class UserSearchHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE,related_name="search_history")
+    search = models.CharField(max_length=200)

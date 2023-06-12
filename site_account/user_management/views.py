@@ -59,7 +59,7 @@ class AuthenticationCheckView(APIView):
                 '-id').first()
             user = User.objects.filter(phone=username).first()
 
-            if not user or not user.has_password():
+            if not user or not user.has_usable_password():
                 if otp_service:
                     if otp_service.is_expired():
                         otp_service.delete()
@@ -83,7 +83,7 @@ class AuthenticationCheckView(APIView):
                 '-id').first()
             user = User.objects.filter(email=username).first()
 
-            if not user or not user.has_password():
+            if not user or not user.has_usable_password():
                 if otp_service:
                     if otp_service.is_expired():
                         otp_service.delete()
@@ -175,11 +175,11 @@ class OTPAuthenticationView(APIView):
                 otp_service.delete()
 
                 if username_type == 'PHONE':
-                    user = User.objects.create_user(username=username, phone=username)
-                    user.set_default_password()
+                    user = User.objects.create_user(username=username, phone=username,password=None)
+
                 elif username_type == 'EMAIL':
-                    user = User.objects.create_user(username=username, email=username)
-                    user.set_default_password()
+                    user = User.objects.create_user(username=username, email=username,password=None)
+
 
                 # User Created successFully and logged in
             else:

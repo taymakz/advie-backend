@@ -6,7 +6,7 @@ from django.utils.crypto import get_random_string
 from jalali_date import date2jalali
 
 from site_account.user_management.models import User
-from site_shop.order_management.models import Order
+
 from site_utils.image.get_file_ext import get_filename_ext
 
 
@@ -54,7 +54,7 @@ class Coupon(models.Model):
         return f"[ {self.code} ] {self.discount_amount:,}{self.discount_type} (usage : {self.usage_count})"
 
     class Meta:
-        ordering = ('-created_at',)
+        ordering = ('-date_created',)
 
     def calculate_discount(self, price):
         if self.discount_type == '%':
@@ -94,11 +94,11 @@ class Coupon(models.Model):
             return False, f'کد تخفیف وارد شده از تاریخ {time} قابل استفاده می باشد'
         if timezone.now() > self.date_expire:
             return False, f'کد تخفیف وارد شده منقضی شده است'
-        # Check if it's the user's first purchase
-        # Todo check user first bought
-        # if self.only_first_order:
-        #     if Order.objects.filter(user_id=user_id).exists():
-        #         return False, 'کد تخفیف فقط برای اولین خرید کاربر قابل استفاده است'
+
+        if self.only_first_order:
+            from site_shop.order_management.models import Order
+            if Order.objects.filter(user_id=user_id).exists():
+                return False, 'کد تخفیف فقط برای اولین خرید کاربر قابل استفاده است'
 
         return True, 'کد تخفیف با موفقیت اعمال شد'
 

@@ -10,10 +10,10 @@ from site_utils.persian.province import province
 def upload_shipping_method_image_path(instance, filename):
     name, ext = get_filename_ext(filename)
     final_name = f"{get_random_string(30)}{ext}"
-    return f"images/coupon/{final_name}"
+    return f"images/shipping-service/{final_name}"
 
 
-class ShippingMethod(models.Model):
+class ShippingService(models.Model):
     image = ProcessedImageField(upload_to=upload_shipping_method_image_path,
                                 processors=[ResizeToFill(160, 160)],
                                 format='WEBP',
@@ -24,8 +24,8 @@ class ShippingMethod(models.Model):
         return f"{self.name}"
 
 
-class ShippingPrice(models.Model):
-    shipping_method = models.ForeignKey(ShippingMethod, on_delete=models.CASCADE)
+class ShippingRate(models.Model):
+    shipping_service = models.ForeignKey(ShippingService, on_delete=models.CASCADE)
     area = models.CharField(max_length=20, choices=province, null=True, blank=True)
     all_area = models.BooleanField(default=True)
     pay_at_destination = models.BooleanField(default=False)
@@ -38,7 +38,7 @@ class ShippingPrice(models.Model):
 
     class Meta:
         ordering = ('order',)
-        unique_together = ("shipping_method", "area")
+        unique_together = ("shipping_service", "area")
 
     def calculate_price(self, order_price):
         # price calculation logic here
@@ -56,4 +56,5 @@ class ShippingPrice(models.Model):
 
     def __str__(self):
 
-        return f"{self.shipping_method.name} ( {self.area} ): {self.price:,} - رایگان بالای : {self.free_shipping_threshold:,}"
+        return f"{self.shipping_service.name} ( {self.area} ): {self.price:,} " \
+               f"- رایگان بالای : {self.free_shipping_threshold:,}"

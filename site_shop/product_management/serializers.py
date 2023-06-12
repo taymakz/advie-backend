@@ -160,7 +160,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
 
 class ProductCardSerializer(serializers.ModelSerializer):
-    category = ProductsCategorySerializer(many=True)
     price = serializers.SerializerMethodField()
     special_price = serializers.SerializerMethodField()
     special_price_percent = serializers.SerializerMethodField()
@@ -189,7 +188,6 @@ class ProductCardSerializer(serializers.ModelSerializer):
             'final_price',
             'sku',
             'is_available_in_stock',
-            'category',
         )
 
     def get_longest_special_price_end_date(self, obj):

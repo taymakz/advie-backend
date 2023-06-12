@@ -5,6 +5,7 @@ from .models import User
 
 class UserSerializer(serializers.ModelSerializer):
     profile = serializers.SerializerMethodField()
+    has_password = serializers.SerializerMethodField()
     class Meta:
         model = User
         fields = (
@@ -24,3 +25,5 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_profile(self, obj):
         return obj.profile.name
+    def get_has_password(self,obj):
+        return obj.has_usable_password()

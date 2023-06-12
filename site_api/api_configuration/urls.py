@@ -26,4 +26,12 @@ urlpatterns = [
     # Product Section
     path('', include('site_shop.product_management.urls')),
 
+    # Order Section
+    path('', include('site_shop.order_management.urls')),
+
+    # Shipping Section
+    path('', include('site_shop.shipping_management.urls')),
+
+    # # Coupon Section
+    # path('', include('site_shop.coupon_management.urls')),
 ]
