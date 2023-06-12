@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 # sys.stdout.reconfigure(encoding='utf-8')
 
 
-
 # Load the environment variables from the .env file
 load_dotenv()
 
@@ -75,7 +74,6 @@ INSTALLED_APPS = [
     'ckeditor_uploader',
     'jalali_date'
 
-
 ]
 
 AUTH_USER_MODEL = 'user_management.User'
@@ -137,7 +135,6 @@ DATABASES = {
 # }
 
 
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -164,6 +161,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
