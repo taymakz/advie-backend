@@ -16,7 +16,7 @@ elasticsearch-dsl==7.4.1
 jdatetime==4.1.1
 pilkit==2.0
 Pillow==9.5.0
-psycopg2-binary==2.9.1
+psycopg2==2.9.6
 PyJWT==2.7.0
 python-dateutil==2.8.2
 python-dotenv==1.0.0
@@ -25,3 +25,4 @@ six==1.16.0
 sqlparse==0.4.4
 tzdata==2023.3
 urllib3==1.26.16
+whitenoise==6.4.0
