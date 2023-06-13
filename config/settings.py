@@ -111,7 +111,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Railway Database
+# Postgress Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -123,7 +123,7 @@ DATABASES = {
     }
 }
 
-# Liara Database
+# Empty Database
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
