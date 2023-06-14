@@ -80,57 +80,42 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = 'user_management.User'
 
-# Postgress Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DATABASE_NAME'),
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        'HOST': os.getenv('DATABASE_HOST'),
-        'PORT': os.getenv('DATABASE_PORT'),
+
+if os.getenv('DATABASE') == "LOCAL":
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+elif os.getenv('DATABASE') == "POSTGRES":
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DATABASE_NAME'),
+            'USER': os.getenv('DATABASE_USER'),
+            'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+            'HOST': os.getenv('DATABASE_HOST'),
+            'PORT': os.getenv('DATABASE_PORT'),
+        }
+    }
+elif os.getenv('DATABASE') == "POSTGRES_URL":
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+        }
+    }
 
-# Empty Database
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#     }
-# }
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
-
-DEFAULT_FILE_STORAGE = 'storages.backends.ftp.FTPStorage'
-
-# FTP credentials
-FTP_HOST = '194.147.142.197'
-FTP_USER = 'pz16796'
-FTP_PASSWORD = 'qPHB9wRE'
-
-FTP_MEDIA_DIRECTORY = 'media'
-FTP_STORAGE_LOCATION = '/'
-
-MEDIA_URL = 'dl.taymaz-project.ir/media/'
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATIC_ROOT = BASE_DIR / 'static'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
-# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-# CKEDITOR_UPLOAD_PATH = MEDIA_ROOT, "contents/"
-CKEDITOR_UPLOAD_PATH = "/contents/"
+CKEDITOR_UPLOAD_PATH = MEDIA_ROOT / 'contents'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-
-    "whitenoise.middleware.WhiteNoiseMiddleware",
 
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
