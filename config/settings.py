@@ -108,24 +108,30 @@ DATABASES = {
 
 
 DEFAULT_FILE_STORAGE = 'storages.backends.ftp.FTPStorage'
-STATICFILES_STORAGE = 'storages.backends.ftp.FTPStorage'
+
 # FTP credentials
 FTP_HOST = '194.147.142.197'
 FTP_USER = 'pz16796'
 FTP_PASSWORD = 'qPHB9wRE'
 
-FTP_STATIC_DIRECTORY = 'static'
 FTP_MEDIA_DIRECTORY = 'media'
 FTP_STORAGE_LOCATION = '/'
 
-STATIC_URL = 'dl.taymaz-project.ir/static/'
 MEDIA_URL = 'dl.taymaz-project.ir/media/'
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # CKEDITOR_UPLOAD_PATH = MEDIA_ROOT, "contents/"
 CKEDITOR_UPLOAD_PATH = "/contents/"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
