@@ -80,7 +80,11 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = 'user_management.User'
 
+DATABASES = {
+    'default': {
 
+    }
+}
 if os.getenv('DATABASE') == "LOCAL":
     DATABASES = {
         'default': {
@@ -106,16 +110,37 @@ elif os.getenv('DATABASE') == "POSTGRES_URL":
         }
     }
 
+if os.environ.get('LOCAL_STORAGE') == 'True':
+
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
+
+
+else:
+    storage_host = os.environ.get('STORAGE_HOST')
+    storage_port = os.environ.get('STORAGE_PORT')
+    storage_user = os.environ.get('STORAGE_USER')
+    storage_password = os.environ.get('STORAGE_PASSWORD')
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.ftp.FTPStorage'
+    FTP_STORAGE_LOCATION = f'ftp://{storage_user}:{storage_password}@{storage_host}:{storage_port}/public_html/media'
+    STORAGE_URL = os.environ.get('STORAGE_URL')
+    MEDIA_URL = f'{STORAGE_URL}/media/'
+
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'static'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
-CKEDITOR_UPLOAD_PATH = MEDIA_ROOT / 'contents'
+if os.environ.get('WHITENOISE') == 'True':
+    STATIC_ROOT = os.path.join(BASE_DIR,"staticfiles")
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# CKEDITOR_UPLOAD_PATH = MEDIA_ROOT / 'contents'
+CKEDITOR_UPLOAD_PATH = 'contents'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
