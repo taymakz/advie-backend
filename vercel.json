@@ -8,7 +8,7 @@
       "src": "vercel.sh",
       "use": "@vercel/static-build",
       "config": {
-        "distDit": "staticfiles"
+        "distDir": "staticfiles"
       }
     }
   ],
