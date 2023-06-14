@@ -23,6 +23,7 @@ CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if 
 FRONTEND_URL = os.environ.get('FRONTEND_URL')
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -34,6 +35,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'storages',
 
     # Local Apps ------------------
 
@@ -77,11 +79,53 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = 'user_management.User'
+
+# Postgress Database
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.getenv('DATABASE_NAME'),
+#         'USER': os.getenv('DATABASE_USER'),
+#         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+#         'HOST': os.getenv('DATABASE_HOST'),
+#         'PORT': os.getenv('DATABASE_PORT'),
+#     }
+# }
+
+# Empty Database
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#     }
+# }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+
+DEFAULT_FILE_STORAGE = 'storages.backends.ftp.FTPStorage'
+STATICFILES_STORAGE = 'storages.backends.ftp.FTPStorage'
+# FTP credentials
+FTP_HOST = '194.147.142.197'
+FTP_USER = 'pz16796'
+FTP_PASSWORD = 'qPHB9wRE'
+
+FTP_STATIC_DIRECTORY = 'static'
+FTP_MEDIA_DIRECTORY = 'media'
+FTP_STORAGE_LOCATION = '/'
+
+STATIC_URL = 'dl.taymaz-project.ir/static/'
+MEDIA_URL = 'dl.taymaz-project.ir/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# CKEDITOR_UPLOAD_PATH = MEDIA_ROOT, "contents/"
+CKEDITOR_UPLOAD_PATH = "/contents/"
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # For Static File Serve ( Vercel )
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
@@ -111,36 +155,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Postgress Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DATABASE_NAME'),
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        'HOST': os.getenv('DATABASE_HOST'),
-        'PORT': os.getenv('DATABASE_PORT'),
-        'OPTIONS': {
-            'sslmode': 'require',
-        },
-    }
-}
-
-# Empty Database
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#     }
-# }
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -165,19 +179,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
-STATIC_URL = 'static/'
-
-
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-CKEDITOR_UPLOAD_PATH = "media/contents/"
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
