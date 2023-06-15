@@ -1,13 +1,16 @@
+
 from PIL import Image
 from django.db import models
-
-from django.utils.crypto import get_random_string
-from imagekit.models import ProcessedImageField
-from imagekit.processors import ResizeToFill
-
-from site_utils.image.get_file_ext import get_filename_ext
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from django.utils.crypto import get_random_string
+from imagekit.models import ProcessedImageField
+
+from site_utils.image.get_file_ext import get_filename_ext
+
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 
 def upload_banner_path(instance, filename):
@@ -43,42 +46,44 @@ class SiteBanner(models.Model):
         super().save(*args, **kwargs)
 
 
-@receiver(post_save, sender=SiteBanner)
-def resize_banner_image(sender, instance, **kwargs):
-    if kwargs.get('raw'):
-        # Fixtures are being loaded, so skip resizing
-        return
-    if instance.image:
+if os.environ.get('LOCAL_STORAGE') == 'True':
 
-        # Get resize dimensions
-        width, height = 0, 0
-        if instance.position == 'BANNER':
-            width, height = 450, 225
-        elif instance.position == 'SLIDER':
-            width, height = 900, 450
+    @receiver(post_save, sender=SiteBanner)
+    def resize_banner_image(sender, instance, **kwargs):
+        if kwargs.get('raw'):
+            # Fixtures are being loaded, so skip resizing
+            return
+        if instance.image:
 
-        # Resize and save image
-        image = Image.open(instance.image.path)
-        image = image.resize((width, height))
-        image.save(instance.image.path)
+            # Get resize dimensions
+            width, height = 0, 0
+            if instance.position == 'BANNER':
+                width, height = 450, 225
+            elif instance.position == 'SLIDER':
+                width, height = 900, 450
+
+            # Resize and save image
+            image = Image.open(instance.image.path)
+            image = image.resize((width, height))
+            image.save(instance.image.path)
 
 
-@receiver(pre_save, sender=SiteBanner)
-def delete_old_image(sender, instance, **kwargs):
-    if kwargs.get('raw'):
-        # Fixtures are being loaded, so skip deleting old image
-        return
-    if not instance.pk:
-        return
+    @receiver(pre_save, sender=SiteBanner)
+    def delete_old_image(sender, instance, **kwargs):
+        if kwargs.get('raw'):
+            # Fixtures are being loaded, so skip deleting old image
+            return
+        if not instance.pk:
+            return
 
-    try:
-        old_object = sender.objects.get(pk=instance.pk)
-    except sender.DoesNotExist:
-        return
+        try:
+            old_object = sender.objects.get(pk=instance.pk)
+        except sender.DoesNotExist:
+            return
 
-    new_image = instance.image
-    old_image = old_object.image
+        new_image = instance.image
+        old_image = old_object.image
 
-    if new_image != old_image:
-        # Delete the old image from storage
-        old_object.image.delete(save=False)
+        if new_image != old_image:
+            # Delete the old image from storage
+            old_object.image.delete(save=False)

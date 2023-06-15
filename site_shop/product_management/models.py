@@ -15,7 +15,8 @@ from imagekit.processors import ResizeToFill
 from site_account.user_management.models import User
 from site_shop.category_management.models import Category
 from site_utils.image.get_file_ext import get_filename_ext
-
+import os
+load_dotenv()
 
 def upload_product_path(instance, filename):
     name, ext = get_filename_ext(filename)
@@ -192,26 +193,26 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.title_ir} - {self.title_en}"
 
+if os.environ.get('LOCAL_STORAGE') == 'True':
+    @receiver(pre_save, sender=Product)
+    def delete_old_image(sender, instance, **kwargs):
+        if kwargs.get('raw'):
+            # Fixtures are being loaded, so skip resizing
+            return
+        if not instance.pk:
+            return
 
-@receiver(pre_save, sender=Product)
-def delete_old_image(sender, instance, **kwargs):
-    if kwargs.get('raw'):
-        # Fixtures are being loaded, so skip resizing
-        return
-    if not instance.pk:
-        return
+        try:
+            old_object = sender.objects.get(pk=instance.pk)
+        except sender.DoesNotExist:
+            return
 
-    try:
-        old_object = sender.objects.get(pk=instance.pk)
-    except sender.DoesNotExist:
-        return
+        new_image = instance.image
+        old_image = old_object.image
 
-    new_image = instance.image
-    old_image = old_object.image
-
-    if new_image != old_image:
-        # Delete the old image from storage
-        old_object.image.delete(save=False)
+        if new_image != old_image:
+            # Delete the old image from storage
+            old_object.image.delete(save=False)
 
 
 class VariantPrefix(models.Model):
