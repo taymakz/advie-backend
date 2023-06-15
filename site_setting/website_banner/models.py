@@ -1,12 +1,17 @@
+import os
+
 from PIL import Image
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils.crypto import get_random_string
+from dotenv import load_dotenv
 from imagekit.models import ProcessedImageField
 
 from site_utils.image.get_file_ext import get_filename_ext
+
+load_dotenv()
 
 
 def upload_banner_path(instance, filename):
@@ -42,29 +47,50 @@ class SiteBanner(models.Model):
         super().save(*args, **kwargs)
 
 
-@receiver(post_save, sender=SiteBanner)
-def resize_banner_image(sender, instance, **kwargs):
-    if kwargs.get('raw'):
-        # Fixtures are being loaded, so skip resizing
-        return
-    if instance.image:
+if os.environ.get('LOCAL_STORAGE') == 'True':
 
-        # Get resize dimensions
-        width, height = 0, 0
-        if instance.position == 'BANNER':
-            width, height = 450, 225
-        elif instance.position == 'SLIDER':
-            width, height = 900, 450
+    @receiver(post_save, sender=SiteBanner)
+    def resize_banner_image(sender, instance, **kwargs):
+        if kwargs.get('raw'):
+            # Fixtures are being loaded, so skip resizing
+            return
+        if instance.image:
 
-        # Open the image using storage API
-        with default_storage.open(instance.image.name, 'rb') as file:
-            image = Image.open(file)
+            # Get resize dimensions
+            width, height = 0, 0
+            if instance.position == 'BANNER':
+                width, height = 450, 225
+            elif instance.position == 'SLIDER':
+                width, height = 900, 450
 
-            # Resize and save the image
-            resized_image = image.resize((width, height))
+            # Resize and save image
+            image = Image.open(instance.image.path)
+            image = image.resize((width, height))
+            image.save(instance.image.path)
+else:
+    @receiver(post_save, sender=SiteBanner)
+    def resize_banner_image(sender, instance, **kwargs):
+        if kwargs.get('raw'):
+            # Fixtures are being loaded, so skip resizing
+            return
+        if instance.image:
 
-            with default_storage.open(instance.image.name, 'wb') as resized_file:
-                resized_image.save(resized_file)
+            # Get resize dimensions
+            width, height = 0, 0
+            if instance.position == 'BANNER':
+                width, height = 450, 225
+            elif instance.position == 'SLIDER':
+                width, height = 900, 450
+
+            # Open the image using storage API
+            with default_storage.open(instance.image.name, 'rb') as file:
+                image = Image.open(file)
+
+                # Resize and save the image
+                resized_image = image.resize((width, height))
+
+                with default_storage.open(instance.image.name, 'wb') as resized_file:
+                    resized_image.save(resized_file)
 
 
 @receiver(pre_save, sender=SiteBanner)
