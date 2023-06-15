@@ -9,6 +9,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
+from dotenv import load_dotenv
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
 
