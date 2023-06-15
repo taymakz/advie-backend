@@ -81,6 +81,9 @@ class User(AbstractUser):
 
 @receiver(pre_save, sender=User)
 def delete_old_image(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        # Fixtures are being loaded, so skip resizing
+        return
     if not instance.pk:
         return
 

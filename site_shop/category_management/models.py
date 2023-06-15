@@ -58,6 +58,9 @@ class Category(MPTTModel):
         return '/search/category/' + '/'.join(url_parts) + '/'
 @receiver(pre_save, sender=Category)
 def delete_old_image(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        # Fixtures are being loaded, so skip resizing
+        return
     if not instance.pk:
         return
 
@@ -94,6 +97,9 @@ class CategoryBanner(models.Model):
         return f"{self.title} - {self.category.title_ir}"
 @receiver(pre_save, sender=CategoryBanner)
 def delete_old_image(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        # Fixtures are being loaded, so skip resizing
+        return
     if not instance.pk:
         return
 

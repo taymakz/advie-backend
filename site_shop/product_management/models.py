@@ -195,6 +195,9 @@ class Product(models.Model):
 
 @receiver(pre_save, sender=Product)
 def delete_old_image(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        # Fixtures are being loaded, so skip resizing
+        return
     if not instance.pk:
         return
 
