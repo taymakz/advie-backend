@@ -13,9 +13,7 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, Bl
 
 from site_utils.image.get_file_ext import get_filename_ext
 
-from dotenv import load_dotenv
-import os
-load_dotenv()
+
 class UserManager(BaseUserManager):
     def create_user(self, email=None, phone=None, password=None, **extra_fields):
         if email:
@@ -81,28 +79,28 @@ class User(AbstractUser):
         return f"{self.username}"
 
 
-if os.environ.get('LOCAL_STORAGE') == 'True':
-    @receiver(pre_save, sender=User)
-    def delete_old_image(sender, instance, **kwargs):
-        if kwargs.get('raw'):
-            # Fixtures are being loaded, so skip resizing
-            return
-        if not instance.pk:
-            return
+# if os.environ.get('LOCAL_STORAGE') == 'True':
+@receiver(pre_save, sender=User)
+def delete_old_image(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        # Fixtures are being loaded, so skip resizing
+        return
+    if not instance.pk:
+        return
 
-        try:
-            old_object = sender.objects.get(pk=instance.pk)
-        except sender.DoesNotExist:
-            return
+    try:
+        old_object = sender.objects.get(pk=instance.pk)
+    except sender.DoesNotExist:
+        return
 
-        new_image = instance.profile
-        old_image = old_object.profile
+    new_image = instance.profile
+    old_image = old_object.profile
 
-        if new_image != old_image:
-            # Delete the old image from storage
-            old_object.profile.delete(save=False)
+    if new_image != old_image:
+        # Delete the old image from storage
+        old_object.profile.delete(save=False)
 
 
 class UserSearchHistory(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,related_name="search_history")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="search_history")
     search = models.CharField(max_length=200)

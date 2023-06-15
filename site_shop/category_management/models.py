@@ -4,15 +4,12 @@ from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils.crypto import get_random_string
-from dotenv import load_dotenv
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from site_utils.image.get_file_ext import get_filename_ext
-
-load_dotenv()
 
 
 def upload_category_path(instance, filename):
@@ -62,27 +59,25 @@ class Category(MPTTModel):
         return '/search/category/' + '/'.join(url_parts) + '/'
 
 
-if os.environ.get('LOCAL_STORAGE') == 'True':
+@receiver(pre_save, sender=Category)
+def delete_old_image(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        # Fixtures are being loaded, so skip resizing
+        return
+    if not instance.pk:
+        return
 
-    @receiver(pre_save, sender=Category)
-    def delete_old_image(sender, instance, **kwargs):
-        if kwargs.get('raw'):
-            # Fixtures are being loaded, so skip resizing
-            return
-        if not instance.pk:
-            return
+    try:
+        old_object = sender.objects.get(pk=instance.pk)
+    except sender.DoesNotExist:
+        return
 
-        try:
-            old_object = sender.objects.get(pk=instance.pk)
-        except sender.DoesNotExist:
-            return
+    new_image = instance.image
+    old_image = old_object.image
 
-        new_image = instance.image
-        old_image = old_object.image
-
-        if new_image != old_image:
-            # Delete the old image from storage
-            old_object.image.delete(save=False)
+    if new_image != old_image:
+        # Delete the old image from storage
+        old_object.image.delete(save=False)
 
 
 class CategoryBanner(models.Model):
