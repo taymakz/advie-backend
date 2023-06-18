@@ -42,6 +42,9 @@ class ProductVariantSerializer(serializers.ModelSerializer):
             'special_price_percent',
             'is_special',
         )
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.filter(stock__gt=0)
 
     def get_special_price(self, obj):
         return obj.get_special_price
