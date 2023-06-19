@@ -1,0 +1,7 @@
+
+ --- vercel database info
+DATABASE_NAME=verceldb
+DATABASE_USER=default
+DATABASE_PASSWORD=wDEiyuAg87Fc
+DATABASE_HOST=ep-sparkling-unit-557268-pooler.eu-central-1.postgres.vercel-storage.com
+DATABASE_PORT=5432

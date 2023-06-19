@@ -30,6 +30,8 @@ class SiteBanner(models.Model):
     image = ProcessedImageField(upload_to=upload_banner_path,
                                 format='WEBP',
                                 options={'quality': 90})
+    resize_width = models.PositiveIntegerField(default=0)
+    resize_height = models.PositiveIntegerField(default=0)
     image_alt = models.CharField(max_length=100, blank=True, null=True)
     url = models.URLField(blank=True, null=True)
     order = models.IntegerField(default=1, blank=True, null=True)
@@ -41,7 +43,7 @@ class SiteBanner(models.Model):
         ordering = ('order',)
 
     def __str__(self):
-        return f"{self.title} - {self.position}"
+        return f"{self.title} - {self.position} {self.resize_width}x{self.resize_height}"
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -57,11 +59,7 @@ if os.environ.get('LOCAL_STORAGE') == 'True':
         if instance.image:
 
             # Get resize dimensions
-            width, height = 0, 0
-            if instance.position == 'BANNER':
-                width, height = 450, 225
-            elif instance.position == 'SLIDER':
-                width, height = 900, 450
+            width, height = instance.resize_width, instance.resize_height
 
             # Resize and save image
             image = Image.open(instance.image.path)
@@ -76,11 +74,8 @@ else:
         if instance.image:
 
             # Get resize dimensions
-            width, height = 0, 0
-            if instance.position == 'BANNER':
-                width, height = 450, 225
-            elif instance.position == 'SLIDER':
-                width, height = 900, 450
+            width, height = instance.resize_width, instance.resize_height
+
 
             # Open the image using storage API
             with default_storage.open(instance.image.name, 'rb') as file:

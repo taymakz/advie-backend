@@ -42,9 +42,6 @@ class ProductVariantSerializer(serializers.ModelSerializer):
             'special_price_percent',
             'is_special',
         )
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        return queryset.filter(stock__gt=0)
 
     def get_special_price(self, obj):
         return obj.get_special_price
@@ -101,7 +98,7 @@ class ProductPropertySerializer(serializers.ModelSerializer):
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     variant_type = VariantTypeSerializer()
-    variants = ProductVariantSerializer(many=True, read_only=True)
+    variants = serializers.SerializerMethodField()
     properties = ProductPropertySerializer(many=True, read_only=True)
     image = serializers.SerializerMethodField()
     breadcrumbs = serializers.SerializerMethodField()
@@ -127,6 +124,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'properties',
             'breadcrumbs',
         )
+
+    def get_variants(self, obj:models.Product):
+            variants = obj.variants.filter(is_active=True)
+            serializer = ProductVariantSerializer(variants, many=True)
+            return serializer.data
 
     def get_longest_special_price_end_date(self, obj):
         return obj.get_longest_special_price_end_date

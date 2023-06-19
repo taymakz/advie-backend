@@ -18,7 +18,6 @@ from site_shop.category_management.models import Category
 from site_utils.image.get_file_ext import get_filename_ext
 
 
-
 def upload_product_path(instance, filename):
     name, ext = get_filename_ext(filename)
     final_name = f"{get_random_string(30)}{ext}"
@@ -61,6 +60,7 @@ class Product(models.Model):
     def get_longest_special_price_end_date(self):
         current_time = timezone.now()
         active_variants = self.variants.filter(
+            is_active=True,
             special_price__isnull=False,
             special_price_start_date__lte=current_time,
             special_price_end_date__gte=current_time
@@ -77,6 +77,7 @@ class Product(models.Model):
     def get_longest_special_price_start_date(self):
         current_time = timezone.now()
         active_variants = self.variants.filter(
+            is_active=True,
             special_price__isnull=False,
             special_price_start_date__lte=current_time,
             special_price_end_date__gte=current_time
@@ -111,6 +112,7 @@ class Product(models.Model):
     @property
     def has_special_price(self):
         variants_with_special_price = self.variants.filter(
+            is_active=True,
             special_price__isnull=False,
             special_price_start_date__lte=timezone.now(),
             special_price_end_date__gte=timezone.now()
@@ -248,6 +250,11 @@ class ProductVariant(models.Model):
 
     class Meta:
         ordering = ('order',)
+
+    def save(self, *args, **kwargs):
+        if self.stock >= 0:
+            self.is_active = False
+        super().save(*args, **kwargs)
 
     def is_special_price_active(self):
         if self.special_price and self.special_price_start_date and self.special_price_end_date and self.special_price_start_date <= timezone.now() <= self.special_price_end_date:
