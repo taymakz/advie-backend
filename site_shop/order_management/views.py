@@ -47,8 +47,8 @@ class AddItemToCurrentOrderView(APIView):
             product_id = request.data.get('product_id')
             variant_id = request.data.get('variant_id')
 
-            product = Product.objects.filter(pk=product_id).first()
-            variant = ProductVariant.objects.filter(pk=variant_id).first()
+            product = Product.objects.filter(pk=product_id, is_active=True).first()
+            variant = ProductVariant.objects.filter(pk=variant_id, is_active=True).first()
             order, created = Order.objects.get_or_create(user=request.user, payment_status=PaymentStatus.NOT_PAID.value)
 
             order_item, created = OrderItem.objects.get_or_create(
