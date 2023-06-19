@@ -31,3 +31,4 @@ sqlparse==0.4.4
 tzdata==2023.3
 urllib3==1.26.16
 whitenoise==6.4.0
+drf-spectacular==0.26.2
