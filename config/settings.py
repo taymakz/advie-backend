@@ -133,7 +133,7 @@ STATIC_URL = '/static/'
 if os.environ.get('WHITENOISE') == 'True':
     STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
+    WHITENOISE_MANIFEST_STRICT = False
 # CKEDITOR_UPLOAD_PATH = MEDIA_ROOT / 'contents'
 CKEDITOR_UPLOAD_PATH = 'contents'
 
