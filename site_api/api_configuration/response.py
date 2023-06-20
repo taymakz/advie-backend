@@ -39,3 +39,7 @@ class PaginationApiResponse(PageNumberPagination):
         response = BaseResponse(data=pagination, status=status.HTTP_200_OK,
                                 message=ResponseMessage.SUCCESS.value)
         return response
+
+    def __call__(self, request, queryset):
+        paginator = super().__call__(request, queryset)
+        return self.get_paginated_response(paginator.page)

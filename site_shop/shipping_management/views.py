@@ -15,7 +15,7 @@ class ShippingListAPIView(ListAPIView):
     permission_classes = [IsAuthenticated]
     queryset = ShippingRate.objects.filter(is_active=True).all()
     serializer_class = ShippingRateSerializer
-    pagination_class = []
+
     def list(self, request, *args, **kwargs):
         try:
             shipping_rates = self.get_queryset()

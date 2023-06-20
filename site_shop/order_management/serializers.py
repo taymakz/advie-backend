@@ -96,7 +96,7 @@ class UserPaidOrderListSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'status',
-            'transaction',
+
             'transaction_id',
             'tracking_code',
 
@@ -198,17 +198,18 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 
     address = OrderAddressSerializer()
     items = UserPaidOrderItemSerializer(many=True)
+    transaction_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = (
             'id',
             'status',
-            'transaction',
+            'transaction_id',
             'tracking_code',
-            'ordered_date',
-            'shipped_date',
-            'delivered_date',
+            'date_ordered',
+            'date_shipped',
+            'date_delivered',
             'total_price',
             'total_profit',
             'total_price_before_discount',
