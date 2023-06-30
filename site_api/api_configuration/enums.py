@@ -5,7 +5,7 @@ class ResponseMessage(Enum):
     # Result Messages
     SUCCESS = "عملیات با موفقیت انجام شد"
     FAILED = "خطایی در انجام عملیات رخ داده است"
-
+    ACCESS_DENIED = "شما اجازه دسترسی ندارید"
     # Validation Messages
     NOT_VALID_EMAIL_OR_PHONE = "شماره موبایل و یا ایمیل وارد شده نامعتبر میباشد"
     NOT_VALID_EMAIL = "ایمیل وارد شده نامعتبر میباشد"
@@ -21,8 +21,8 @@ class ResponseMessage(Enum):
     EMAIL_NEWSLETTER_ACTIVATION_LINK_ALREADY_SENT = "لینک فعال سازی به ایمیل مورد نظر قبلا ارسال شده است"
 
     # Authentication
-    AUTH_WRONG_PASSWORD = "کلمه عبور نادرست میباشد"
-    AUTH_WRONG_OTP = "کد تایید نادرست میباشد"
+    AUTH_WRONG_PASSWORD = "کلمه عبور اشتباه میباشد"
+    AUTH_WRONG_OTP = "کد تایید اشتباه میباشد"
     AUTH_LOGIN_SUCCESSFULLY = "با موفقیت وارد شدید"
     AUTH_LOGOUT_SUCCESSFULLY = "با موفقیت خارج شدید"
 
@@ -38,3 +38,9 @@ class ResponseMessage(Enum):
     ORDER_ITEM_COUNT_INCREASED = "به تعداد محصول در سبد خرید اضافه شد"
     ORDER_ITEM_COUNT_DECREASED = "از تعداد محصول در سبد خرید کم شد"
     ORDER_ITEM_REMOVED = "محصول از سبد خرید حذف شد"
+
+    # User Panel Address
+    USER_PANEL_ADDRESS_ADDED_SUCCESSFULLY = "آدرس جدید با موفقیت ثبت شد"
+    USER_PANEL_ADDRESS_REMOVED_SUCCESSFULLY = "آدرس مورد نظر حذف شد"
+    USER_PANEL_ADDRESS_EDITED_SUCCESSFULLY = "آدرس با موفقیت ویرایش شد"
+    USER_PANEL_ADDRESS_NOT_FOUND = "آدرسی یافت نشد"

@@ -20,7 +20,8 @@ class UserManager(BaseUserManager):
             email = self.normalize_email(email)
         phone = phone or None  # set default value if phone is not provided
         user = self.model(email=email, phone=phone, **extra_fields)
-        user.set_password(password)
+
+        user.set_unusable_password()
         user.save(using=self._db)
         return user
 
@@ -29,8 +30,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         if not email and not phone:
             raise ValueError('At least one of email or phone must be set')
-        username = email or phone  # set the correct field as the username
-        user = self.create_user(username=username, email=email, phone=phone, password=password, **extra_fields)
+        user = self.create_user(email=email, phone=phone, password=password, **extra_fields)
         user.save(using=self._db)
         return user
 
@@ -53,8 +53,8 @@ class User(AbstractUser):
     national_code = models.CharField(max_length=10, null=True, blank=True)
     verified = models.BooleanField(default=False)
     forgot_password_token = models.UUIDField(null=True, blank=True)
-
-    USERNAME_FIELD = 'phone'
+    username = models.IntegerField(null=True, blank=True)
+    USERNAME_FIELD = 'id'
     REQUIRED_FIELDS = []
     objects = UserManager()
 
@@ -69,11 +69,6 @@ class User(AbstractUser):
 
     def is_verify(self):
         return self.verified
-
-    def save(self, *args, **kwargs):
-        if self.password and not self.password.startswith('pbkdf2_sha256'):
-            self.password = make_password(self.password)
-        super(User, self).save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.username}"

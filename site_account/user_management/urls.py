@@ -3,24 +3,28 @@ from rest_framework_simplejwt import views as jwt_views
 from . import views
 
 urlpatterns = [
-    path('user/token/', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('user/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
-    path('user/logout/', views.LogoutView.as_view(), name='logout'),
+    path('token/', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
+    path('logout/', views.LogoutView.as_view(), name='logout'),
 
-    # path('user/current/password/', views.ChangePasswordView.as_view(), name='current_user_change_password'),
 
-    path('user/request/current/', views.RequestCurrentUserView.as_view(), name='request_current_user'),
-    path('user/request/otp/', views.RequestOTPView.as_view(), name='request_otp'),
+
+    path('request/current/', views.RequestCurrentUserView.as_view(), name='request_current_user'),
+    path('request/otp/', views.RequestOTPView.as_view(), name='request_otp'),
+
+    path('confirm/phone/', views.UserConfirmPhoneView.as_view(), name='user_confirm_phone'),
+    path('confirm/email/', views.UserConfirmEmailView.as_view(), name='user_confirm_email'),
 
     # Authenticate
-    path('user/authenticate/check/', views.AuthenticationCheckView.as_view(), name='authenticate_check'),
-    path('user/authenticate/password/', views.PasswordAuthenticationView.as_view(), name='authenticate_password'),
-    path('user/authenticate/otp/', views.OTPAuthenticationView.as_view(), name='authenticate_otp'),
+    path('authenticate/check/', views.AuthenticationCheckView.as_view(), name='authenticate_check'),
+    path('authenticate/password/', views.PasswordAuthenticationView.as_view(), name='authenticate_password'),
+    path('authenticate/otp/', views.OTPAuthenticationView.as_view(), name='authenticate_otp'),
 
-    path('user/forgot/password/check/', views.ForgotPasswordCheckView.as_view(), name='forgot_password_check'),
-    path('user/forgot/password/otp/', views.ForgotPasswordOTPView.as_view(), name='forgot_password_otp'),
-    path('user/forgot/password/reset/', views.ForgotPasswordResetView.as_view(), name='forgot_password_otp'),
-    # path('auth/login/', views.LoginView.as_view(), name='login'),
-    # path('auth/reset/', views.ResetPasswordView.as_view(), name='reset_password'),
+    # Forgot password
+    path('forgot/password/check/', views.ForgotPasswordCheckView.as_view(), name='forgot_password_check'),
+    path('forgot/password/otp/', views.ForgotPasswordOTPView.as_view(), name='forgot_password_otp'),
+    path('forgot/password/reset/', views.ForgotPasswordResetView.as_view(), name='forgot_password_otp'),
 
+    # User Profile
+    path('edit/detail/', views.UserUpdateDetailView.as_view(), name='user_edit_detail'),
 ]

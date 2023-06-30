@@ -9,14 +9,14 @@ class UserForm(forms.ModelForm):
     class Meta:
         model = models.User
         fields = (
-        'profile', 'username', 'email', 'phone', 'first_name', 'last_name', 'is_superuser', 'is_staff', 'is_active',
-        'national_code','last_login','password')
+        'profile', 'email', 'phone', 'first_name', 'last_name', 'is_superuser', 'is_staff', 'is_active',
+        'national_code','last_login')
 
 
 class UserAdmin(admin.ModelAdmin):
     form = UserForm
     list_display = (
-    'profile_image', 'username', 'email', 'phone', 'first_name', 'last_name', 'is_superuser', 'is_active',)
+    'profile_image', 'email', 'phone', 'first_name', 'last_name', 'is_superuser', 'is_active',)
 
     def profile_image(self, obj):
         if obj.profile:

@@ -14,7 +14,7 @@ schema_view = get_schema_view(
         license=openapi.License(name="BSD License"),
     ),
     public=True,
-    permission_classes=(permissions.AllowAny,),
+    permission_classes=[permissions.AllowAny],
 )
 
 urlpatterns = [
@@ -25,8 +25,8 @@ urlpatterns = [
     path('', include('site_pages.home_data.urls')),
 
     # Users Section
-    path('', include('site_account.user_management.urls')),
-    # path('', include('site_account.user_addresses.urls')),
+    path('user/', include('site_account.user_management.urls')),
+    path('user/', include('site_account.user_addresses.urls')),
 
     # Notification Section
     path('', include('site_notification.announcement_notification.urls')),

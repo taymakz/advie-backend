@@ -1,5 +1,5 @@
 from rest_framework import status
-from rest_framework.generics import RetrieveAPIView
+from rest_framework.generics import RetrieveAPIView, UpdateAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -13,7 +13,6 @@ from site_api.api_configuration.enums import ResponseMessage
 from site_api.api_configuration.response import BaseResponse
 from site_notification.verification_notification.models import VerifyOTPService
 from site_utils.validator.regexes import validate_phone, validate_email
-
 
 
 # Get Current User Detail
@@ -53,8 +52,8 @@ class AuthenticationCheckView(APIView):
                                 message=ResponseMessage.NOT_VALID_EMAIL_OR_PHONE.value)
 
         if validate_phone(username):
-            if len(username) == 10:
-                username = f"0{username}"
+            username = f"0{username}" if len(username) == 10 else username
+
             otp_service = VerifyOTPService.objects.filter(type='PHONE', to=username, usage='AUTHENTICATE').order_by(
                 '-id').first()
             user = User.objects.filter(phone=username).first()
@@ -123,6 +122,8 @@ class PasswordAuthenticationView(APIView):
 
         try:
             username_type = 'PHONE' if validate_phone(username) else 'EMAIL'
+            username = f"0{username}" if username_type == 'PHONE' and len(username) == 10 else username
+
             user = User.objects.get(phone=username) if username_type == 'PHONE' else User.objects.get(
                 email=username)
             if not user.check_password(password):
@@ -160,6 +161,7 @@ class OTPAuthenticationView(APIView):
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.FAILED.value)
         username_type = 'PHONE' if validate_phone(username) else 'EMAIL'
+        username = f"0{username}" if username_type == 'PHONE' and len(username) == 10 else username
 
         user = None
         try:
@@ -175,11 +177,10 @@ class OTPAuthenticationView(APIView):
                 otp_service.delete()
 
                 if username_type == 'PHONE':
-                    user = User.objects.create_user(username=username, phone=username,password=None)
+                    user = User.objects.create_user(phone=username, password=None)
 
                 elif username_type == 'EMAIL':
-                    user = User.objects.create_user(username=username, email=username,password=None)
-
+                    user = User.objects.create_user(email=username, password=None)
 
                 # User Created successFully and logged in
             else:
@@ -221,8 +222,7 @@ class ForgotPasswordCheckView(APIView):
         username = request.data.get('username').lower()
 
         if validate_phone(username):
-            if len(username) == 10:
-                username = f"0{username}"
+            username = f"0{username}" if len(username) == 10 else username
 
             otp_type = 'PHONE'
             message = ResponseMessage.PHONE_OTP_SENT.value
@@ -271,6 +271,7 @@ class ForgotPasswordOTPView(APIView):
                                 message=ResponseMessage.FAILED.value)
 
         username_type = 'PHONE' if validate_phone(username) else 'EMAIL'
+        username = f"0{username}" if username_type == 'PHONE' and len(username) == 10 else username
         user = User.objects.filter(phone=username).first() if username_type == 'PHONE' else User.objects.filter(
             email=username).first()
 
@@ -308,6 +309,8 @@ class ForgotPasswordResetView(APIView):
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.PASSWORD_CONFIRM_MISMATCH.value)
         username_type = 'PHONE' if validate_phone(username) else 'EMAIL'
+        username = f"0{username}" if username_type == 'PHONE' and len(username) == 10 else username
+
         user = User.objects.filter(phone=username).first() if username_type == 'PHONE' else User.objects.filter(
             email=username).first()
 
@@ -340,8 +343,8 @@ class RequestOTPView(APIView):
         if validate_phone(to):
             phone = to
 
-            if len(phone) == 10:
-                phone = f"0{phone}"
+            phone = f"0{phone}" if len(phone) == 10 else phone
+
             otp_service = VerifyOTPService.objects.filter(type='PHONE', to=phone).order_by('-id').first()
             if otp_service:
                 if otp_service.is_expired():
@@ -410,3 +413,74 @@ class LogoutView(APIView):
 
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.FAILED.value)
+
+
+class UserUpdateDetailView(UpdateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, *args, **kwargs):
+        user = self.request.user
+        serializer = self.serializer_class(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        response = BaseResponse(status=status.HTTP_204_NO_CONTENT,
+                                message=ResponseMessage.SUCCESS.value)
+        return response
+
+
+class UserConfirmPhoneView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, format=None):
+        phone = request.data.get('phone', None).lower()
+        otp = request.data.get('otp', None)
+        user = self.request.user
+
+        phone = f"0{phone}" if len(phone) == 10 else phone
+
+        if not phone or not otp or (phone == user.phone):
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
+
+
+
+        otp_service = VerifyOTPService.objects.filter(type='PHONE', to=phone, code=otp,
+                                                      usage='VERIFY').order_by('-id').first()
+
+        if not otp_service or otp_service.is_expired():
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.AUTH_WRONG_OTP.value)
+
+        otp_service.delete()
+        user.phone = phone
+
+        user.save()
+        return BaseResponse(status=status.HTTP_200_OK,message=ResponseMessage.SUCCESS.value)
+class UserConfirmEmailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, format=None):
+        email = request.data.get('email', None).lower()
+        otp = request.data.get('otp', None)
+        user = self.request.user
+
+        if not email or not otp or (email == user.email):
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
+
+
+
+        otp_service = VerifyOTPService.objects.filter(type='EMAIL', to=email, code=otp,
+                                                      usage='VERIFY').order_by('-id').first()
+
+        if not otp_service or otp_service.is_expired():
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.AUTH_WRONG_OTP.value)
+
+        otp_service.delete()
+        user.email = email
+
+        user.save()
+        return BaseResponse(status=status.HTTP_200_OK,message=ResponseMessage.SUCCESS.value)

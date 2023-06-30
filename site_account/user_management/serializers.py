@@ -6,12 +6,13 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer):
     profile = serializers.SerializerMethodField()
     has_password = serializers.SerializerMethodField()
+    full_name = serializers.CharField(source='get_full_name')
     class Meta:
         model = User
         fields = (
             'id',
             'profile',
-            'username',
+            'full_name',
             'first_name',
             'last_name',
             'email',
@@ -25,5 +26,5 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_profile(self, obj):
         return obj.profile.name
-    def get_has_password(self,obj):
+    def get_has_password(self,obj:User):
         return obj.has_usable_password()
