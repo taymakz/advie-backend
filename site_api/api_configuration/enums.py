@@ -29,7 +29,6 @@ class ResponseMessage(Enum):
     # Reset Password
     RESET_PASSWORD_USER_NOT_FOUND = "کاربری با مشخصات وارد شده یافت نشد"
     RESET_PASSWORD_SUCCESSFULLY = "کلمه عبور جدید با موفقیت ثبت شد"
-    PASSWORD_LENGTH_INVALID = "کلمه عبور باید حداقل 6 و حداکثر 16 حرف باشد"
     PASSWORD_CONFIRM_MISMATCH = "کلمه های عبور یکسان نمیباشند"
 
     # Orders
@@ -44,3 +43,6 @@ class ResponseMessage(Enum):
     USER_PANEL_ADDRESS_REMOVED_SUCCESSFULLY = "آدرس مورد نظر حذف شد"
     USER_PANEL_ADDRESS_EDITED_SUCCESSFULLY = "آدرس با موفقیت ویرایش شد"
     USER_PANEL_ADDRESS_NOT_FOUND = "آدرسی یافت نشد"
+    USER_PANEL_PHONE_ALREADY_EXIST = "شماره موبایل وارد شده قبلا ثبت شده است"
+    USER_PANEL_EMAIL_ALREADY_EXIST = "ایمیل وارد شده قبلا ثبت شده است"
+    USER_PANEL_CURRENT_PASSWORD_WRONG = "کلمه عبور فعلی اشتباه میباشد"

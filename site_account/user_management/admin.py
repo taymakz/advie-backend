@@ -4,19 +4,18 @@ from . import models
 from django.utils.html import format_html
 
 
-
 class UserForm(forms.ModelForm):
     class Meta:
         model = models.User
         fields = (
-        'profile', 'email', 'phone', 'first_name', 'last_name', 'is_superuser', 'is_staff', 'is_active',
-        'national_code','last_login')
+            'profile', 'email', 'phone', 'first_name', 'last_name', 'is_superuser', 'is_staff', 'is_active',
+            'national_code', 'last_login')
 
 
 class UserAdmin(admin.ModelAdmin):
     form = UserForm
     list_display = (
-    'profile_image', 'email', 'phone', 'first_name', 'last_name', 'is_superuser', 'is_active',)
+        'profile_image', 'email', 'phone', 'first_name', 'last_name', 'is_superuser', 'is_active',)
 
     def profile_image(self, obj):
         if obj.profile:
@@ -27,4 +26,3 @@ class UserAdmin(admin.ModelAdmin):
 
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.UserSearchHistory)
-

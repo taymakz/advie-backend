@@ -12,8 +12,7 @@ urlpatterns = [
     path('request/current/', views.RequestCurrentUserView.as_view(), name='request_current_user'),
     path('request/otp/', views.RequestOTPView.as_view(), name='request_otp'),
 
-    path('confirm/phone/', views.UserConfirmPhoneView.as_view(), name='user_confirm_phone'),
-    path('confirm/email/', views.UserConfirmEmailView.as_view(), name='user_confirm_email'),
+
 
     # Authenticate
     path('authenticate/check/', views.AuthenticationCheckView.as_view(), name='authenticate_check'),
@@ -25,6 +24,13 @@ urlpatterns = [
     path('forgot/password/otp/', views.ForgotPasswordOTPView.as_view(), name='forgot_password_otp'),
     path('forgot/password/reset/', views.ForgotPasswordResetView.as_view(), name='forgot_password_otp'),
 
-    # User Profile
+    # User Detail
     path('edit/detail/', views.UserUpdateDetailView.as_view(), name='user_edit_detail'),
+    path('edit/password/', views.UserEditPassword.as_view(), name='user_edit_password'),
+
+    path('edit/phone/request/', views.UserEditPhoneRequestView.as_view(), name='user_edit_phone_request'),
+    path('edit/phone/confirm/', views.UserEditPhoneConfirmView.as_view(), name='user_edit_phone_confirm'),
+
+    path('edit/email/request/', views.UserEditEmailRequestView.as_view(), name='user_edit_email_request'),
+    path('edit/email/confirm/', views.UserEditEmailConfirmView.as_view(), name='user_edit_email_confirm'),
 ]

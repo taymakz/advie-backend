@@ -5,14 +5,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from site_account.user_management.models import User
-from site_account.user_management.serializers import UserSerializer
+from site_account.user_management.serializers import UserSerializer, UserEditProfileSerializer
 from site_api.api_configuration.enums import ResponseMessage
 from site_api.api_configuration.response import BaseResponse
 from site_notification.verification_notification.models import VerifyOTPService
-from site_utils.validator.regexes import validate_phone, validate_email
+from site_utils.validator.regexes import validate_phone, validate_email, validate_password
 
 
 # Get Current User Detail
@@ -302,9 +303,10 @@ class ForgotPasswordResetView(APIView):
         token = token.strip('"')
         password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')
-        if len(password) < 6 or len(password) > 16:
+        is_valid, message = validate_password(password)
+        if not is_valid:
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
-                                message=ResponseMessage.PASSWORD_LENGTH_INVALID.value)
+                                message=message)
         if password != confirm_password:
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.PASSWORD_CONFIRM_MISMATCH.value)
@@ -315,6 +317,7 @@ class ForgotPasswordResetView(APIView):
             email=username).first()
 
         if (user and token) and (str(user.forgot_password_token) == token):
+
             user.set_password(password)
             user.revoke_all_tokens()
             user.generate_forgot_password_token()
@@ -345,7 +348,8 @@ class RequestOTPView(APIView):
 
             phone = f"0{phone}" if len(phone) == 10 else phone
 
-            otp_service = VerifyOTPService.objects.filter(type='PHONE', to=phone).order_by('-id').first()
+            otp_service = VerifyOTPService.objects.filter(type='PHONE', to=phone, usage=otp_usage).order_by(
+                '-id').first()
             if otp_service:
                 if otp_service.is_expired():
                     otp_service.delete()
@@ -366,7 +370,8 @@ class RequestOTPView(APIView):
         elif validate_email(to):
             email = to
 
-            otp_service = VerifyOTPService.objects.filter(type='EMAIL', to=email).order_by('-id').first()
+            otp_service = VerifyOTPService.objects.filter(type='EMAIL', to=email, usage=otp_usage).order_by(
+                '-id').first()
             if otp_service:
                 if otp_service.is_expired():
                     otp_service.delete()
@@ -416,7 +421,7 @@ class LogoutView(APIView):
 
 
 class UserUpdateDetailView(UpdateAPIView):
-    serializer_class = UserSerializer
+    serializer_class = UserEditProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def put(self, request, *args, **kwargs):
@@ -430,7 +435,47 @@ class UserUpdateDetailView(UpdateAPIView):
         return response
 
 
-class UserConfirmPhoneView(APIView):
+class UserEditPhoneRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, format=None):
+        phone = request.data.get('phone', None).lower()
+        otp_usage = request.data.get('otp_usage', None)
+
+        if not phone or not otp_usage:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
+
+        if validate_phone(phone):
+            phone = f"0{phone}" if len(phone) == 10 else phone
+            if User.objects.filter(phone=phone).exists():
+                return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                    message=ResponseMessage.USER_PANEL_PHONE_ALREADY_EXIST.value)
+            otp_service = VerifyOTPService.objects.filter(type='PHONE', to=phone, usage=otp_usage).order_by(
+                '-id').first()
+            if otp_service:
+                if otp_service.is_expired():
+                    otp_service.delete()
+                    new_otp_service = VerifyOTPService.objects.create(type='PHONE', to=phone, usage=otp_usage)
+                    new_otp_service.send_otp()
+
+                    return BaseResponse(status=status.HTTP_200_OK,
+                                        message=ResponseMessage.PHONE_OTP_SENT.value.format(username=phone))
+                else:
+                    return BaseResponse(status=status.HTTP_200_OK,
+                                        message=ResponseMessage.PHONE_OTP_SENT.value.format(username=phone))
+            else:
+                new_otp_service = VerifyOTPService.objects.create(type='PHONE', to=phone, usage=otp_usage)
+
+                new_otp_service.send_otp()
+                return BaseResponse(status=status.HTTP_200_OK,
+                                    message=ResponseMessage.PHONE_OTP_SENT.value.format(username=phone))
+        else:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.NOT_VALID_PHONE.value)
+
+
+class UserEditPhoneConfirmView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
@@ -444,8 +489,6 @@ class UserConfirmPhoneView(APIView):
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.FAILED.value)
 
-
-
         otp_service = VerifyOTPService.objects.filter(type='PHONE', to=phone, code=otp,
                                                       usage='VERIFY').order_by('-id').first()
 
@@ -457,8 +500,49 @@ class UserConfirmPhoneView(APIView):
         user.phone = phone
 
         user.save()
-        return BaseResponse(status=status.HTTP_200_OK,message=ResponseMessage.SUCCESS.value)
-class UserConfirmEmailView(APIView):
+        return BaseResponse(status=status.HTTP_200_OK, message=ResponseMessage.SUCCESS.value)
+
+
+class UserEditEmailRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, format=None):
+        email = request.data.get('email', None).lower()
+        otp_usage = request.data.get('otp_usage', None)
+
+        if not email or not otp_usage:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
+
+        if validate_email(email):
+            if User.objects.filter(email=email).exists():
+                return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                    message=ResponseMessage.USER_PANEL_EMAIL_ALREADY_EXIST.value)
+            otp_service = VerifyOTPService.objects.filter(type='EMAIL', to=email, usage=otp_usage).order_by(
+                '-id').first()
+            if otp_service:
+                if otp_service.is_expired():
+                    otp_service.delete()
+                    new_otp_service = VerifyOTPService.objects.create(type='EMAIL', to=email, usage=otp_usage)
+                    new_otp_service.send_otp()
+
+                    return BaseResponse(status=status.HTTP_200_OK,
+                                        message=ResponseMessage.EMAIL_OTP_SENT.value.format(username=email))
+                else:
+                    return BaseResponse(status=status.HTTP_200_OK,
+                                        message=ResponseMessage.EMAIL_OTP_SENT.value.format(username=email))
+            else:
+                new_otp_service = VerifyOTPService.objects.create(type='EMAIL', to=email, usage=otp_usage)
+
+                new_otp_service.send_otp()
+                return BaseResponse(status=status.HTTP_200_OK,
+                                    message=ResponseMessage.EMAIL_OTP_SENT.value.format(username=email))
+        else:
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.NOT_VALID_EMAIL.value)
+
+
+class UserEditEmailConfirmView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
@@ -469,8 +553,6 @@ class UserConfirmEmailView(APIView):
         if not email or not otp or (email == user.email):
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.FAILED.value)
-
-
 
         otp_service = VerifyOTPService.objects.filter(type='EMAIL', to=email, code=otp,
                                                       usage='VERIFY').order_by('-id').first()
@@ -483,4 +565,41 @@ class UserConfirmEmailView(APIView):
         user.email = email
 
         user.save()
-        return BaseResponse(status=status.HTTP_200_OK,message=ResponseMessage.SUCCESS.value)
+        return BaseResponse(status=status.HTTP_200_OK, message=ResponseMessage.SUCCESS.value)
+
+
+class UserEditPassword(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, format=None):
+        current_password = request.data.get('current_password')
+        password = request.data.get('password')
+        confirm_password = request.data.get('confirm_password')
+        user = self.request.user
+
+        if user.has_usable_password() and not user.check_password(current_password):
+            return BaseResponse(data={'error_input_name':'current_password'}, status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.USER_PANEL_CURRENT_PASSWORD_WRONG.value)
+        is_valid, message = validate_password(password)
+        if not is_valid:
+            return BaseResponse(data={'error_input_name':'password'}, status=status.HTTP_400_BAD_REQUEST,
+                                message=message)
+        if password != confirm_password:
+            return BaseResponse(data={'error_input_name':'confirm_password'}, status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.PASSWORD_CONFIRM_MISMATCH.value)
+
+        user.set_password(password)
+        user.revoke_all_tokens()
+        user.generate_forgot_password_token()
+        user.save()
+
+        # Generate JWT token for the user
+        refresh_token = RefreshToken.for_user(user)
+        access_token = refresh_token.access_token
+
+        user_token = {
+            'access': str(access_token),
+            'refresh': str(refresh_token),
+        }
+        return BaseResponse(data=user_token, status=status.HTTP_200_OK,
+                            message=ResponseMessage.RESET_PASSWORD_SUCCESSFULLY.value)

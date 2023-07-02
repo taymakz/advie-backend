@@ -54,7 +54,7 @@ class User(AbstractUser):
     verified = models.BooleanField(default=False)
     forgot_password_token = models.UUIDField(null=True, blank=True)
     username = models.IntegerField(null=True, blank=True)
-    USERNAME_FIELD = 'id'
+    USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = []
     objects = UserManager()
 
@@ -63,9 +63,10 @@ class User(AbstractUser):
         self.save()
 
     def revoke_all_tokens(self):
-        tokens = OutstandingToken.objects.filter(user_id=self.id)
-        for token in tokens:
-            t, _ = BlacklistedToken.objects.get_or_create(token=token)
+        for token in OutstandingToken.objects.filter(user=self).exclude(
+                id__in=BlacklistedToken.objects.filter(token__user=self).values_list('token_id', flat=True),
+        ):
+            BlacklistedToken.objects.create(token=token)
 
     def is_verify(self):
         return self.verified

@@ -28,3 +28,13 @@ class UserSerializer(serializers.ModelSerializer):
         return obj.profile.name
     def get_has_password(self,obj:User):
         return obj.has_usable_password()
+
+class UserEditProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'first_name',
+            'last_name',
+            'national_code',
+        )
