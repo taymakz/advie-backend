@@ -37,6 +37,9 @@ urlpatterns = [
     # path('', include('site_setting.website_banner.urls')),
 
     # Shop Section
+    # Payment Section
+    path('', include('site_shop.transaction_management.urls')),
+
 
     # Category Section
     path('', include('site_shop.category_management.urls')),
@@ -50,6 +53,8 @@ urlpatterns = [
     # Shipping Section
     path('', include('site_shop.shipping_management.urls')),
 
-    # # Coupon Section
-    # path('', include('site_shop.coupon_management.urls')),
+    # Coupon Section
+    path('', include('site_shop.coupon_management.urls')),
+
+
 ]

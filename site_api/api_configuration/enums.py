@@ -46,3 +46,9 @@ class ResponseMessage(Enum):
     USER_PANEL_PHONE_ALREADY_EXIST = "شماره موبایل وارد شده قبلا ثبت شده است"
     USER_PANEL_EMAIL_ALREADY_EXIST = "ایمیل وارد شده قبلا ثبت شده است"
     USER_PANEL_CURRENT_PASSWORD_WRONG = "کلمه عبور فعلی اشتباه میباشد"
+
+    # Payment
+    PAYMENT_NOT_VALID_SELECTED_ADDRESS = "آدرس انتخاب شده نامعتبر می باشد"
+    PAYMENT_NOT_VALID_SELECTED_SHIPPING = "شیوه ارسال انتخاب شده نامعتبر می باشد"
+    PAYMENT_NOT_VALID_USED_COUPON = "کد تخفیف استفاده شده نامعتبر می باشد"
+    PAYMENT_EMPTY_ORDER = "سبد خرید شما خالی می باشد"

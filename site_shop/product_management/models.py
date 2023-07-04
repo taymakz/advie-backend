@@ -9,7 +9,6 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
-from dotenv import load_dotenv
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
 
@@ -250,14 +249,14 @@ class ProductVariant(models.Model):
     special_price_end_date = models.DateTimeField(null=True, blank=True)
     stock = models.IntegerField(default=0)
     order = models.IntegerField(default=1, blank=True, null=True)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     is_delete = models.BooleanField(default=False)
 
     class Meta:
         ordering = ('order',)
 
     def save(self, *args, **kwargs):
-        if self.stock >= 0:
+        if self.stock <= 0:
             self.is_active = False
         super().save(*args, **kwargs)
 

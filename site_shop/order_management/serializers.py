@@ -66,6 +66,17 @@ class CurrentOrderItemSerializer(serializers.ModelSerializer):
 
 class CurrentOrderSerializer(serializers.ModelSerializer):
     items = CurrentOrderItemSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = (
+            'id',
+            'items',
+        )
+
+
+class CurrentOrderForPaymentSerializer(serializers.ModelSerializer):
+    items = CurrentOrderItemSerializer(many=True)
     total_price = serializers.SerializerMethodField()
 
     class Meta:
@@ -73,7 +84,6 @@ class CurrentOrderSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'items',
-            'total_price',
         )
 
     def get_total_price(self, obj):

@@ -9,10 +9,28 @@ from site_api.api_configuration.enums import ResponseMessage
 from site_api.api_configuration.response import BaseResponse
 from site_shop.order_management.models import Order, OrderItem, PaymentStatus
 from site_shop.order_management.serializers import UserPaidOrderListSerializer, OrderDetailSerializer, \
-    CurrentOrderSerializer
+    CurrentOrderSerializer, CurrentOrderForPaymentSerializer
 from site_shop.product_management.models import Product, ProductVariant
 from site_shop.transaction_management.models import Transaction
 
+class GetUserCurrentOrderPaymentInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            with transaction.atomic():
+                # acquire a lock on the order record
+                order = Order.objects.select_for_update().filter(user=request.user,
+                                                                 payment_status=PaymentStatus.OPEN_ORDER.name,
+                                                                 is_delete=False).first()
+                serializer = CurrentOrderForPaymentSerializer(order)
+
+            return BaseResponse(data=serializer.data, status=status.HTTP_200_OK,
+                                message=ResponseMessage.SUCCESS.value)
+        except:
+
+            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
 
 class GetUserCurrentOrderView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -23,11 +41,12 @@ class GetUserCurrentOrderView(APIView):
             with transaction.atomic():
                 # acquire a lock on the order record
                 order = Order.objects.select_for_update().filter(user=request.user,
-                                                                 payment_status=PaymentStatus.OPEN_ORDER.value,is_delete=False).first()
+                                                                 payment_status=PaymentStatus.OPEN_ORDER.name,
+                                                                 is_delete=False).first()
 
                 if not order:
                     # create a new order if one doesn't exist
-                    order = Order.objects.create(user=request.user,payment_status=PaymentStatus.OPEN_ORDER.value)
+                    order = Order.objects.create(user=request.user, payment_status=PaymentStatus.OPEN_ORDER.name)
                 serializer = CurrentOrderSerializer(order)
 
             return BaseResponse(data=serializer.data, status=status.HTTP_200_OK,
@@ -39,7 +58,6 @@ class GetUserCurrentOrderView(APIView):
 
 
 class AddItemToCurrentOrderView(APIView):
-    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -49,7 +67,8 @@ class AddItemToCurrentOrderView(APIView):
 
             product = Product.objects.filter(pk=product_id, is_active=True).first()
             variant = ProductVariant.objects.filter(pk=variant_id, is_active=True).first()
-            order, created = Order.objects.get_or_create(user=request.user, payment_status=PaymentStatus.NOT_PAID.value)
+            order, created = Order.objects.get_or_create(user=request.user,
+                                                         payment_status=PaymentStatus.OPEN_ORDER.name, is_delete=False)
 
             order_item, created = OrderItem.objects.get_or_create(
                 order=order,
@@ -78,7 +97,8 @@ class IncreaseCurrentOrderItemCountView(APIView):
     def put(self, request):
         try:
             item_id = request.data.get('item_id')
-            order_item = OrderItem.objects.get(id=item_id, order__user=self.request.user)
+            order_item = OrderItem.objects.get(id=item_id, order__user=self.request.user,
+                                               order__payment_status=PaymentStatus.OPEN_ORDER.name)
             variant = order_item.variant
             if variant.stock <= 0:
                 return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
@@ -87,7 +107,7 @@ class IncreaseCurrentOrderItemCountView(APIView):
 
             order_item.count += 1
             order_item.save()
-            return BaseResponse(status=status.HTTP_200_OK,
+            return BaseResponse(status=status.HTTP_204_NO_CONTENT,
                                 message=ResponseMessage.ORDER_ITEM_COUNT_INCREASED.value)
         except:
 
@@ -103,14 +123,15 @@ class DecreaseCurrentOrderItemCountView(APIView):
         try:
             item_id = request.data.get('item_id')
 
-            order_item = OrderItem.objects.get(id=item_id, order__user=self.request.user)
+            order_item = OrderItem.objects.get(id=item_id, order__user=self.request.user,
+                                               order__payment_status=PaymentStatus.OPEN_ORDER.name)
             variant = order_item.variant
             if variant.stock == 1:
                 return None
             order_item.count -= 1
             order_item.save()
 
-            return BaseResponse(status=status.HTTP_200_OK,
+            return BaseResponse(status=status.HTTP_204_NO_CONTENT,
                                 message=ResponseMessage.ORDER_ITEM_COUNT_DECREASED.value)
         except:
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
@@ -125,7 +146,8 @@ class RemoveCurrentOrderItemView(APIView):
         try:
             item_id = request.data.get('item_id')
 
-            order_item = OrderItem.objects.get(id=item_id, order__user=self.request.user)
+            order_item = OrderItem.objects.get(id=item_id, order__user=self.request.user,
+                                               order__payment_status=PaymentStatus.OPEN_ORDER.name)
             order_item.delete()
             return BaseResponse(status=status.HTTP_200_OK,
                                 message=ResponseMessage.ORDER_ITEM_REMOVED.value)

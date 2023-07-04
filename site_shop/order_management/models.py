@@ -2,9 +2,12 @@ from enum import Enum
 
 from django.db import models
 
+from site_api.api_configuration.enums import ResponseMessage
+from site_account.user_addresses.models import UserAddresses
 from site_account.user_management.models import User
 from site_shop.coupon_management.models import Coupon
 from site_shop.product_management.models import Product, ProductVariant
+from site_shop.refund_management.models import RefundOrderItem
 from site_shop.shipping_management.models import ShippingRate
 
 
@@ -16,6 +19,7 @@ class OrderAddress(models.Model):
     receiver_postal_code = models.CharField(max_length=100)
     receiver_address = models.CharField(max_length=300)
     receiver_national_code = models.CharField(max_length=11)
+    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.receiver_name} {self.receiver_phone}"
@@ -42,6 +46,7 @@ PAYMENT_STATUS_CHOICES = [(status.name, status.value) for status in PaymentStatu
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='orders', blank=True, null=True)
 
+    slug = models.SlugField(max_length=6, unique=True, blank=True, null=True)
     # Status Fields -------------- Start
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, blank=True, null=True)
     delivery_status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, blank=True, null=True)
@@ -72,52 +77,60 @@ class Order(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._previous_status = self.status
+        self._previous_status = self.delivery_status
 
     def clean(self):
-        self._previous_status = self.status
+        self._previous_status = self.delivery_status
 
     def save(self, *args, **kwargs):
-        if self.status != self._previous_status:
-            if self.status == OrderStatus.PENDING.value:
+        if not self.slug:
+            self.slug = self.generate_unique_slug()
+        if self.delivery_status != self._previous_status:
+            if self.delivery_status == DeliveryStatus.PENDING.value:
                 print('Send SMS In ORDER')
-            if self.status == OrderStatus.PROCESSING.value:
+            if self.delivery_status == DeliveryStatus.PROCESSING.value:
                 print('Send SMS In ORDER')
-            elif self.status == OrderStatus.SHIPPED.value:
+            elif self.delivery_status == DeliveryStatus.SHIPPED.value:
                 import datetime
                 self.shipped_date = datetime.date.today()
                 print('Send SMS In ORDER')
-            self._previous_status = self.status
+            self._previous_status = self.delivery_status
         super().save(*args, **kwargs)
 
+    def generate_unique_slug(self):
+        while True:
+            import random
+            slug = str(random.randint(1, 999999)).zfill(6)
+            if not Order.objects.filter(slug=slug).exists():
+                return slug
     def __str__(self):
-        return f"{self.user.username} Count : ( {self.items.count()} ) : " \
-               f"( {self.get_payment_status_display()} ) : ( {self.get_status_display()} ) "
+        return f"{self.user.email} - {self.user.phone} Count : ( {self.items.count()} ) : " \
+               f"( {self.get_payment_status_display()} ) : ( {self.get_delivery_status_display()} ) "
 
     def send_order_status_notification(self, pattern):
         # celery_send_order_status_service.delay(to=self.user.phone, pattern=pattern, id=self.transaction)
         pass
 
     @staticmethod
-    def is_valid_shipping_method(user_main_address, shipping):
+    def is_valid_shipping_method(user_address: UserAddresses, shipping: ShippingRate):
         # Get the ShippingPrice object with the given ID
 
         if shipping.all_area:
             # Filter all ShippingPrice objects that are active and not equal to 'همه'
-            other_shipping_areas = ShippingRate.objects.filter(all_area=True, is_active=True)
-            if user_main_address and user_main_address.province in [shipping_area.area for shipping_area in
-                                                                    other_shipping_areas]:
+            other_shipping_areas = ShippingRate.objects.filter(all_area=True, is_active=True, is_delete=False)
+            if user_address and user_address.receiver_province in [shipping_area.area for shipping_area in
+                                                                             other_shipping_areas]:
                 # User's main address province matches an active shipping area
-                message = 'شیوه ارسال انتخاب شده نا معتبر است'
+                message = ResponseMessage.PAYMENT_NOT_VALID_SELECTED_SHIPPING.value
                 return False, message
             else:
                 return True, None
         else:
-            if user_main_address and user_main_address.province == shipping.area:
+            if user_address and user_address.receiver_province == shipping.area:
                 # User's main address province matches the shipping area
                 return True, None
             else:
-                message = 'شیوه ارسال انتخاب شده نا معتبر است'
+                message = ResponseMessage.PAYMENT_NOT_VALID_SELECTED_SHIPPING.value
                 return False, message
 
     @property
@@ -164,11 +177,13 @@ class OrderItem(models.Model):
     final_price_before_discount = models.IntegerField(null=True, blank=True, editable=False)
     final_discount = models.IntegerField(null=True, blank=True, editable=False)
     final_profit = models.IntegerField(null=True, blank=True, editable=False)
+
+    refund = models.ForeignKey(RefundOrderItem, on_delete=models.CASCADE, related_name='order_item', blank=True,
+                               null=True)
     is_delete = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.order.user.username} " \
-               f"- {self.refund.get_status_display()} " \
+        return f"{self.order.user.email} - {self.order.user.phone} " \
                f"- {self.product.title_ir}"
 
     def save(self, *args, **kwargs):

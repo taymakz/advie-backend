@@ -2,7 +2,6 @@ from enum import Enum
 
 from django.db import models
 
-from site_shop.order_management.models import OrderItem
 
 
 class RefundStatus(Enum):
@@ -16,7 +15,6 @@ REFUND_STATUS_CHOICES = [(status.name, status.value) for status in RefundStatus]
 
 
 class RefundOrderItem(models.Model):
-    order_item = models.OneToOneField(OrderItem, on_delete=models.DO_NOTHING, related_name="refund")
     status = models.CharField(max_length=20, choices=REFUND_STATUS_CHOICES, default=RefundStatus.NOT_REQUESTED.value)
     reject_message = models.TextField(blank=True, null=True)
 
