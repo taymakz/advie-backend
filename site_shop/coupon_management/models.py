@@ -49,6 +49,8 @@ class Coupon(models.Model):
     
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
+    is_active = models.BooleanField(default=False)
+    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"[ {self.code} ] {self.discount_amount:,}{self.discount_type} (usage : {self.usage_count})"

@@ -14,6 +14,7 @@ class UserAddresses(models.Model):
     receiver_city = models.CharField(max_length=100, choices=cities.cities)
     receiver_postal_code = models.CharField(max_length=20)
     receiver_address = models.TextField(max_length=100)
+    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username} | {self.receiver_province} | {self.receiver_city}"

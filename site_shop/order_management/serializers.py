@@ -8,7 +8,8 @@ from site_shop.transaction_management.models import Transaction
 class OrderAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderAddress
-        fields = '__all__'
+        exclude =['is_delete']
+
 
 
 # Current Order , Item Serializer ( Not Paid )

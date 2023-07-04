@@ -42,6 +42,7 @@ def upload_profile_path(instance, filename):
 
 
 class User(AbstractUser):
+    username = models.IntegerField(null=True, blank=True)
     profile = ProcessedImageField(upload_to=upload_profile_path,
                                   default='images/profile/default_profile.png',
                                   processors=[ResizeToFill(100, 100)],
@@ -53,7 +54,8 @@ class User(AbstractUser):
     national_code = models.CharField(max_length=10, null=True, blank=True)
     verified = models.BooleanField(default=False)
     forgot_password_token = models.UUIDField(null=True, blank=True)
-    username = models.IntegerField(null=True, blank=True)
+    is_delete = models.BooleanField(default=False)
+
     USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = []
     objects = UserManager()

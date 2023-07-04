@@ -7,13 +7,14 @@ from site_shop.category_management.models import Category
 class VariantTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.VariantType
-        fields = '__all__'
+        exclude =['is_delete']
 
 
 class VariantPrefixSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.VariantPrefix
-        fields = '__all__'
+        exclude =['is_delete']
+
 
 
 class VariantValueSerializer(serializers.ModelSerializer):
@@ -21,7 +22,7 @@ class VariantValueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.VariantValue
-        fields = '__all__'
+        exclude =['is_delete']
 
 
 class ProductVariantSerializer(serializers.ModelSerializer):

@@ -23,7 +23,7 @@ class ProductSearchView(ListAPIView):
 class ProductDetailAPIView(RetrieveAPIView):
     authentication_classes = []
     permission_classes = [AllowAny]
-    queryset = Product.objects.filter(is_active=True)
+    queryset = Product.objects.filter(is_active=True,is_delete=False)
     serializer_class = ProductDetailSerializer
     lookup_field = 'sku'
     lookup_url_kwarg = 'sku'

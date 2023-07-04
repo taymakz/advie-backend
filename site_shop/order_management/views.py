@@ -23,11 +23,11 @@ class GetUserCurrentOrderView(APIView):
             with transaction.atomic():
                 # acquire a lock on the order record
                 order = Order.objects.select_for_update().filter(user=request.user,
-                                                                 payment_status=PaymentStatus.NOT_PAID.value).first()
+                                                                 payment_status=PaymentStatus.OPEN_ORDER.value,is_delete=False).first()
 
                 if not order:
                     # create a new order if one doesn't exist
-                    order = Order.objects.create(user=request.user)
+                    order = Order.objects.create(user=request.user,payment_status=PaymentStatus.OPEN_ORDER.value)
                 serializer = CurrentOrderSerializer(order)
 
             return BaseResponse(data=serializer.data, status=status.HTTP_200_OK,

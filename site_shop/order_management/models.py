@@ -21,7 +21,7 @@ class OrderAddress(models.Model):
         return f"{self.receiver_name} {self.receiver_phone}"
 
 
-class OrderStatus(Enum):
+class DeliveryStatus(Enum):
     CANCELED = "لغو شده"
     PENDING = "در انتظار تایید"
     PROCESSING = "درحال پردازش"
@@ -30,24 +30,21 @@ class OrderStatus(Enum):
 
 
 class PaymentStatus(Enum):
+    OPEN_ORDER = "باز"
+    PENDING_PAYMENT = "در انتظار پرداخت"
     PAID = "پرداخت شده"
-    NOT_PAID = "پرداخت نشده"
 
 
-ORDER_STATUS_CHOICES = [(status.name, status.value) for status in OrderStatus]
+DELIVERY_STATUS_CHOICES = [(status.name, status.value) for status in DeliveryStatus]
 PAYMENT_STATUS_CHOICES = [(status.name, status.value) for status in PaymentStatus]
-
-
-
 
 
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='orders', blank=True, null=True)
 
     # Status Fields -------------- Start
-    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES,
-                                      default=PaymentStatus.NOT_PAID.value)
-    status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, blank=True, null=True)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, blank=True, null=True)
+    delivery_status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, blank=True, null=True)
     # -------------- End
 
     coupon = models.ForeignKey(Coupon, on_delete=models.SET_NULL, blank=True, null=True)
@@ -68,7 +65,7 @@ class Order(models.Model):
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
-
+    is_delete = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-date_ordered']
@@ -167,6 +164,7 @@ class OrderItem(models.Model):
     final_price_before_discount = models.IntegerField(null=True, blank=True, editable=False)
     final_discount = models.IntegerField(null=True, blank=True, editable=False)
     final_profit = models.IntegerField(null=True, blank=True, editable=False)
+    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.order.user.username} " \

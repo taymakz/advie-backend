@@ -32,6 +32,7 @@ class Category(MPTTModel):
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
+    is_delete = models.BooleanField(default=False)
 
     class MPTTMeta:
         order_insertion_by = ['order']
@@ -93,6 +94,7 @@ class CategoryBanner(models.Model):
     order = models.IntegerField(default=1, blank=True, null=True)
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
+    is_delete = models.BooleanField(default=False)
 
     class Meta:
         ordering = ('order',)

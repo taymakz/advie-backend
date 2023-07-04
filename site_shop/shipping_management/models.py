@@ -16,9 +16,10 @@ def upload_shipping_method_image_path(instance, filename):
 class ShippingService(models.Model):
     image = ProcessedImageField(upload_to=upload_shipping_method_image_path,
                                 processors=[ResizeToFill(160, 160)],
-                                format='WEBP',
+                                format='PNG',
                                 options={'quality': 90})
     name = models.CharField(max_length=100)
+    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name}"
@@ -27,24 +28,23 @@ class ShippingService(models.Model):
 class ShippingRate(models.Model):
     shipping_service = models.ForeignKey(ShippingService, on_delete=models.CASCADE)
     area = models.CharField(max_length=20, choices=province, null=True, blank=True)
-    all_area = models.BooleanField(default=True)
+    all_area = models.BooleanField(default=False)
     pay_at_destination = models.BooleanField(default=False)
     price = models.PositiveIntegerField(null=True, blank=True, default=0)
     free_shipping_threshold = models.PositiveIntegerField(null=True, blank=True, default=0)
     order = models.IntegerField(default=1, blank=True, null=True)
-    is_active = models.BooleanField(default=True)
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
+    is_active = models.BooleanField(default=True)
+    is_delete = models.BooleanField(default=False)
 
     class Meta:
         ordering = ('order',)
-        unique_together = ("shipping_service", "area")
+        unique_together = [("shipping_service", "area"),("shipping_service", "all_area")]
+
 
     def calculate_price(self, order_price):
-        # price calculation logic here
-        if self.pay_at_destination:
-            return 0
-        elif self.free_shipping_threshold and order_price >= self.free_shipping_threshold:
+        if self.pay_at_destination or order_price < self.free_shipping_threshold:
             return 0
         else:
             return self.price

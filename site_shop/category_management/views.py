@@ -10,7 +10,7 @@ from site_shop.category_management.serializers import CategorySerializer
 
 
 class CategoryListView(ListAPIView):
-    queryset = Category.objects.filter(level=0)
+    queryset = Category.objects.filter(level=0,is_delete=False)
     serializer_class = CategorySerializer
     authentication_classes = []
     permission_classes = [AllowAny]

@@ -34,6 +34,7 @@ class VariantType(models.Model):
     )
     select_style = models.CharField(max_length=20, choices=SELECT_STYLE, default="RADIO")
     is_none = models.BooleanField(default=False)
+    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.title_ir} - {self.title_en}"
@@ -55,6 +56,7 @@ class Product(models.Model):
     is_active = models.BooleanField(default=True)
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
+    is_delete = models.BooleanField(default=False)
 
     @property
     def get_longest_special_price_end_date(self):
@@ -220,6 +222,7 @@ def delete_old_image(sender, instance, **kwargs):
 
 class VariantPrefix(models.Model):
     name = models.CharField(max_length=100)
+    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name}"
@@ -231,6 +234,7 @@ class VariantValue(models.Model):
     prefix = models.ForeignKey(VariantPrefix, on_delete=models.CASCADE)
 
     color_code = models.CharField(max_length=100, null=True, blank=True, verbose_name="Color (Not Required)")
+    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.value} - {self.prefix}"
@@ -247,6 +251,7 @@ class ProductVariant(models.Model):
     stock = models.IntegerField(default=0)
     order = models.IntegerField(default=1, blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    is_delete = models.BooleanField(default=False)
 
     class Meta:
         ordering = ('order',)
@@ -300,6 +305,7 @@ class ProductVisit(models.Model):
     product = models.ForeignKey('Product', on_delete=models.CASCADE, related_name='visits')
     ip = models.CharField(max_length=30, verbose_name='user ip')
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
+    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.product.title_en} / {self.ip}'
@@ -325,6 +331,7 @@ class ProductProperty(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='properties')
     property = models.ForeignKey(Property, on_delete=models.CASCADE)
     value = RichTextUploadingField(blank=True, null=True)
+    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return self.property.name
@@ -350,11 +357,13 @@ class ProductProperty(models.Model):
 class UserFavoriteProducts(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorite_products')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    is_delete = models.BooleanField(default=False)
 
 
 class UserRecentVisitedProduct(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recent_products')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username} {self.product.title_ir}"

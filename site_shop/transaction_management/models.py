@@ -9,8 +9,8 @@ from site_shop.order_management.models import Order
 
 
 class TransactionStatus(Enum):
-    SUCCESS = "تراکنش موفق"
-    FAILED = "تراکنش ناموفق"
+    SUCCESS = "پرداخت موفق"
+    FAILED = "پرداخت ناموفق"
 
 
 TRANSACTION_STATUS_CHOICES = [(status.name, status.value) for status in TransactionStatus]
@@ -29,6 +29,7 @@ class Transaction(models.Model):
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
+    is_delete = models.BooleanField(default=False)
 
     objects = TransactionManager()
     def save(self, *args, **kwargs):

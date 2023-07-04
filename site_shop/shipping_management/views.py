@@ -13,7 +13,7 @@ from site_shop.shipping_management.serializers import ShippingRateSerializer
 class ShippingListAPIView(ListAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    queryset = ShippingRate.objects.filter(is_active=True).all()
+    queryset = ShippingRate.objects.filter(is_active=True,is_delete=False).all()
     serializer_class = ShippingRateSerializer
 
     def list(self, request, *args, **kwargs):
