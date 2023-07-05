@@ -44,8 +44,8 @@ class Coupon(models.Model):
         MinValueValidator(0)
     ])
     only_first_order = models.BooleanField(default=False)
-    date_start = models.DateTimeField()
-    date_expire = models.DateTimeField()
+    date_start = models.DateTimeField(blank=True, null=True)
+    date_expire = models.DateTimeField(blank=True, null=True)
     
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
@@ -61,12 +61,14 @@ class Coupon(models.Model):
     def calculate_discount(self, price):
         if self.discount_type == '%':
             discount = int(round(price * (self.discount_amount / 100)))
+            percentage_effect = self.discount_amount
         else:
             discount = int(min(self.discount_amount, price))
+            percentage_effect = (discount / price) * 100
 
         discounted_price = int(price - discount)
         discount_difference = int(price - discounted_price)
-        return discounted_price, discount_difference
+        return discounted_price, discount_difference, int(percentage_effect)
 
     def clean(self):
         super().clean()
@@ -74,7 +76,7 @@ class Coupon(models.Model):
             raise ValidationError('Max user usage cannot be greater than max usage.')
         if self.min_order_total is not None and self.max_order_total is not None and self.min_order_total > self.max_order_total:
             raise ValidationError('Minimum order total cannot be greater than maximum order total.')
-        if self.date_expire <= self.date_start:
+        if self.date_expire is not None and self.date_start is not None and self.date_expire <= self.date_start:
             raise ValidationError('expire date must be after start date.')
 
     def validate_coupon(self, order_total_price, user_id):
@@ -91,16 +93,18 @@ class Coupon(models.Model):
             return False, f'کد تخفیف وارد شده قابل استفاده برای سفارش های بیشتر از {self.min_order_total:,} می باشد'
         if self.max_order_total is not None and order_total_price > self.max_order_total:
             return False, f'کد تخفیف وارد شده قابل استفاده برای سفارش های کمتر از {self.max_order_total:,} می یباشد'
-        if timezone.now() < self.date_start:
+
+        if self.date_start is not None and timezone.now() < self.date_start:
             time = date2jalali(self.date_start)
             return False, f'کد تخفیف وارد شده از تاریخ {time} قابل استفاده می باشد'
-        if timezone.now() > self.date_expire:
+
+        if self.date_expire is not None and timezone.now() > self.date_expire:
             return False, f'کد تخفیف وارد شده منقضی شده است'
 
         if self.only_first_order:
             from site_shop.order_management.models import Order
             if Order.objects.filter(user_id=user_id).exists():
-                return False, 'کد تخفیف فقط برای اولین خرید کاربر قابل استفاده است'
+                return False, 'کد تخفیف فقط برای اولین خرید قابل استفاده است'
 
         return True, 'کد تخفیف با موفقیت اعمال شد'
 

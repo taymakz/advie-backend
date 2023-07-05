@@ -9,28 +9,10 @@ from site_api.api_configuration.enums import ResponseMessage
 from site_api.api_configuration.response import BaseResponse
 from site_shop.order_management.models import Order, OrderItem, PaymentStatus
 from site_shop.order_management.serializers import UserPaidOrderListSerializer, OrderDetailSerializer, \
-    CurrentOrderSerializer, CurrentOrderForPaymentSerializer
+    CurrentOrderSerializer
 from site_shop.product_management.models import Product, ProductVariant
 from site_shop.transaction_management.models import Transaction
 
-class GetUserCurrentOrderPaymentInfoView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        try:
-            with transaction.atomic():
-                # acquire a lock on the order record
-                order = Order.objects.select_for_update().filter(user=request.user,
-                                                                 payment_status=PaymentStatus.OPEN_ORDER.name,
-                                                                 is_delete=False).first()
-                serializer = CurrentOrderForPaymentSerializer(order)
-
-            return BaseResponse(data=serializer.data, status=status.HTTP_200_OK,
-                                message=ResponseMessage.SUCCESS.value)
-        except:
-
-            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
-                                message=ResponseMessage.FAILED.value)
 
 class GetUserCurrentOrderView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -47,6 +29,14 @@ class GetUserCurrentOrderView(APIView):
                 if not order:
                     # create a new order if one doesn't exist
                     order = Order.objects.create(user=request.user, payment_status=PaymentStatus.OPEN_ORDER.name)
+                # check if user order Address and Shipping Service Are Set Or Raise Error
+                if order.shipping:
+                    is_valid, message = order.is_valid_shipping_method(user_address=order.address,
+                                                                       shipping=order.shipping)
+                    if not is_valid:
+                        order.shipping = None
+                        order.address = None
+                        order.save()
                 serializer = CurrentOrderSerializer(order)
 
             return BaseResponse(data=serializer.data, status=status.HTTP_200_OK,

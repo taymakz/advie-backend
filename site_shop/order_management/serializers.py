@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from site_shop.order_management.models import OrderAddress, OrderItem, Order
 from site_shop.product_management.serializers import VariantTypeSerializer, ProductVariantSerializer
+from site_shop.shipping_management.serializers import ShippingRateSerializer
 from site_shop.transaction_management.models import Transaction
 
 
@@ -66,28 +67,16 @@ class CurrentOrderItemSerializer(serializers.ModelSerializer):
 
 class CurrentOrderSerializer(serializers.ModelSerializer):
     items = CurrentOrderItemSerializer(many=True)
+    shipping = ShippingRateSerializer()
 
     class Meta:
         model = Order
         fields = (
             'id',
             'items',
+            'shipping'
         )
 
-
-class CurrentOrderForPaymentSerializer(serializers.ModelSerializer):
-    items = CurrentOrderItemSerializer(many=True)
-    total_price = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Order
-        fields = (
-            'id',
-            'items',
-        )
-
-    def get_total_price(self, obj):
-        return obj.get_total_price
 
 
 # Order , Item Serializer ( Paid )

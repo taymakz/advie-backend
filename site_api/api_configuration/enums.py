@@ -47,6 +47,8 @@ class ResponseMessage(Enum):
     USER_PANEL_EMAIL_ALREADY_EXIST = "ایمیل وارد شده قبلا ثبت شده است"
     USER_PANEL_CURRENT_PASSWORD_WRONG = "کلمه عبور فعلی اشتباه میباشد"
 
+    # Coupon
+    COUPON_NOT_VALID = "کد تخفیف وارد شده نا معتبر می باشد"
     # Payment
     PAYMENT_NOT_VALID_SELECTED_ADDRESS = "آدرس انتخاب شده نامعتبر می باشد"
     PAYMENT_NOT_VALID_SELECTED_SHIPPING = "شیوه ارسال انتخاب شده نامعتبر می باشد"

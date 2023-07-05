@@ -180,7 +180,7 @@ class RequestPaymentSubmitAPIView(APIView):
             order_total_price = 1000
 
         data = {
-            "MerchantID": settings.MERCHANT,
+            "MerchantID": settings.ZARINPAL_MERCHANT,
             "Amount": amount * 10,
             "Description": description,
             "Phone": user.phone,
@@ -195,21 +195,25 @@ class RequestPaymentSubmitAPIView(APIView):
             if response.status_code == 200:
                 response = response.json()
                 if response['Status'] == 100:
-                    return {'status': True, 'url': ZP_API_STARTPAY + str(response['Authority']),
-                            'authority': response['Authority']}
+                    print(ZP_API_STARTPAY + str(response['Authority']))
+                    return BaseResponse(data={'status': True, 'url': ZP_API_STARTPAY + str(response['Authority']),
+                                              'authority': response['Authority']}, status=status.HTTP_200_OK)
                 else:
-                    return {'status': False, 'code': str(response['Status'])}
+                    return BaseResponse(data={'status': False, 'code': str(response['Status'])})
             return response
 
         except requests.exceptions.Timeout:
             return {'status': False, 'code': 'timeout'}
         except requests.exceptions.ConnectionError:
             return {'status': False, 'code': 'connection error'}
+
+
 class VerifyPaymentAPIView(APIView):
 
-    def get(self, request, authority):
+    def get(self, request):
+        authority= request.GET.get('Authority', None)
         data = {
-            "MerchantID": settings.MERCHANT,
+            "MerchantID": settings.ZARINPAL_MERCHANT,
             "Amount": amount,
             "Authority": authority,
         }

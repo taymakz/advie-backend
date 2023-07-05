@@ -114,7 +114,7 @@ class Order(models.Model):
     @staticmethod
     def is_valid_shipping_method(user_address: UserAddresses, shipping: ShippingRate):
         # Get the ShippingPrice object with the given ID
-
+        if not user_address or not shipping: return False , 'آدرس و یا شیوه ارسال نا معتبر'
         if shipping.all_area:
             # Filter all ShippingPrice objects that are active and not equal to 'همه'
             other_shipping_areas = ShippingRate.objects.filter(all_area=True, is_active=True, is_delete=False)
