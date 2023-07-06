@@ -143,13 +143,14 @@ class RequestPaymentSubmitAPIView(APIView):
                                     message=ResponseMessage.PAYMENT_NOT_VALID_USED_COUPON.value)
             valid, message = used_coupon.validate_coupon(user_id=user.id, order_total_price=order_total_price)
             if valid:
-                coupon_effect_new_price, coupon_effect_dif_price, percentage_effect = used_coupon.calculate_discount(order_total_price)
+                coupon_effect_new_price, coupon_effect_dif_price, percentage_effect = used_coupon.calculate_discount(
+                    order_total_price)
                 order_total_price -= coupon_effect_dif_price
             else:
                 return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                     message=ResponseMessage.PAYMENT_NOT_VALID_USED_COUPON.value)
         order_total_price += current_order.shipping.calculate_price(
-                        order_price=order_total_price_before_coupon)
+            order_price=order_total_price_before_coupon)
         # if Order Price is Free
         if order_total_price == 0:
             current_order.payment_status = PaymentStatus.PAID.name
@@ -256,7 +257,8 @@ class VerifyPaymentAPIView(APIView):
                     valid, message = current_order.coupon.validate_coupon(user_id=user.id,
                                                                           order_total_price=total_price)
                     if valid:
-                        new_price, dif_price , percentage_price= current_order.coupon.calculate_discount(current_order.get_total_price)
+                        new_price, dif_price, percentage_price = current_order.coupon.calculate_discount(
+                            current_order.get_total_price)
                         current_order.coupon_effect_price = dif_price
                     else:
                         pass
@@ -266,11 +268,12 @@ class VerifyPaymentAPIView(APIView):
                     item.set_final_price()
                     item.save()
                 current_order.save()
-                Transaction.objects.create(user=user, order=current_order, status=TransactionStatus.SUCCESS.name,
-                                           ref_id=response['RefID'])
-                return redirect(f"{settings.FRONTEND_URL}/panel/")
+                transaction = Transaction.objects.create(user=user, order=current_order,
+                                                         status=TransactionStatus.SUCCESS.name,
+                                                         ref_id=response['RefID'])
+                return redirect(
+                    f"{settings.FRONTEND_URL}/checkout/result/{transaction.transaction_id}/{transaction.slug}/")
 
-                # return {'status': True, 'RefID': response['RefID']}
             else:
                 errors = {
                     1: 'اطلاعات ارسال شده ناقص است.',
@@ -290,13 +293,15 @@ class VerifyPaymentAPIView(APIView):
                     100: 'عمليات با موفقيت انجام گرديده است.',
                     101: 'عمليات پرداخت موفق بوده و قبلا PaymentVerification تراكنش انجام شده است.'
                 }
-                print(response)
+
                 error_code = response['Status']
                 error_message = errors.get(error_code, 'خطای ناشناخته لطفا با پشتیبانی تماس بگیرید')
                 reason = f"Status: False,کد: {str(error_code)}, پیام: {error_message}"
-                Transaction.objects.create(user=user, order=current_order, status=TransactionStatus.FAILED.name,
-                                           reason=reason)
-                return redirect(f"{settings.FRONTEND_URL}/vf/pm?f={error_message}")
+                transaction = Transaction.objects.create(user=user, order=current_order,
+                                                         status=TransactionStatus.FAILED.name,
+                                                         reason=reason)
+                return redirect(
+                    f"{settings.FRONTEND_URL}/checkout/result/{transaction.transaction_id}/{transaction.slug}/")
 
         Transaction.objects.create(user=user, order=current_order, status=TransactionStatus.FAILED.name,
                                    reason=response)
