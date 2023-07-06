@@ -1,3 +1,4 @@
+from datetime import timedelta
 from enum import Enum
 
 from django.db import models
@@ -91,7 +92,7 @@ class Order(models.Model):
         if not self.slug:
             self.slug = self.generate_unique_slug()
         if not self.repayment_date_expire and self.payment_status == PaymentStatus.PENDING_PAYMENT.name:
-            self.repayment_date_expire = timezone.now() + datetime.timedelta(hours=1)
+            self.repayment_date_expire = timezone.now() + timedelta(hours=1)
 
         if self.delivery_status != self._previous_status:
             if self.delivery_status == DeliveryStatus.PENDING.value:

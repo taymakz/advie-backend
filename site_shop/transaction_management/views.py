@@ -18,6 +18,8 @@ from site_shop.coupon_management.models import Coupon
 from site_shop.order_management.models import Order, PaymentStatus, OrderAddress, DeliveryStatus
 from site_shop.shipping_management.models import ShippingRate
 from site_shop.transaction_management.models import Transaction, TransactionStatus
+from django.utils import timezone
+from datetime import timedelta
 
 if settings.ZARINPAL_SANDBOX:
     sandbox = 'sandbox'
@@ -33,6 +35,41 @@ description = "نهایی کردن خرید سفارش "
 email = ''
 mobile = ''
 CallbackURL = settings.BACKEND_URL
+
+
+class CheckoutResultAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, transaction_id, transaction_slug):
+        # Filter the Transaction model based on the provided criteria
+        try:
+            transaction = Transaction.objects.get(
+                transaction_id=transaction_id,
+                slug=transaction_slug,
+                is_active=True,
+                is_delete=False
+            )
+            order = transaction.order
+
+            # Check if the Order repayment is expired
+            is_repayment_expired = False
+            if order and order.repayment_date_expire:
+                is_repayment_expired = order.repayment_date_expire < timezone.now()
+            formatted_repayment_expire_date = order.repayment_date_expire.strftime("%a %b %d %Y %H:%M:%S GMT%z (%Z)")
+
+            # Prepare the CheckoutResultDTO
+            result = {
+                'transaction_status': transaction.status,
+                'transaction_id': transaction.transaction_id,
+                'order_slug': order.slug if order else None,
+                'payment_date': transaction.date_created,
+                'repayment_date_expire': formatted_repayment_expire_date,
+                'is_repayment_expired': is_repayment_expired
+            }
+
+            return BaseResponse(data=result, status=status.HTTP_200_OK)
+        except Transaction.DoesNotExist:
+            return BaseResponse(status=status.HTTP_404_NOT_FOUND)
 
 
 class RequestPaymentCheckAPIView(APIView):
@@ -184,7 +221,7 @@ class RequestPaymentSubmitAPIView(APIView):
 
         data = {
             "MerchantID": settings.ZARINPAL_MERCHANT,
-            "Amount": order_total_price * 10,
+            "Amount": order_total_price,
             "Description": description,
             "Phone": user.phone,
             "CallbackURL": f"{CallbackURL}/api/payment/verify?order={current_order.slug}",
@@ -238,7 +275,7 @@ class VerifyPaymentAPIView(APIView):
 
         data = {
             "MerchantID": settings.ZARINPAL_MERCHANT,
-            "Amount": total_price * 10,
+            "Amount": total_price,
             "Authority": authority,
         }
         data = json.dumps(data)
@@ -271,6 +308,7 @@ class VerifyPaymentAPIView(APIView):
                 transaction = Transaction.objects.create(user=user, order=current_order,
                                                          status=TransactionStatus.SUCCESS.name,
                                                          ref_id=response['RefID'])
+                transaction.save()
                 return redirect(
                     f"{settings.FRONTEND_URL}/checkout/result/{transaction.transaction_id}/{transaction.slug}/")
 

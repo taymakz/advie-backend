@@ -42,9 +42,9 @@ class Transaction(models.Model):
 
         if self.transaction_id is None:
             transaction_id = randint(10000000, 99999999)
-            while Transaction.objects.filter(transaction=transaction_id).exists():
+            while Transaction.objects.filter(transaction_id=transaction_id).exists():
                 transaction_id = randint(10000000, 99999999)
-            self.transaction = transaction_id
+            self.transaction_id = transaction_id
         if self.slug is None:
             slug = get_random_string(6)
             while Transaction.objects.filter(slug=slug).exists():
