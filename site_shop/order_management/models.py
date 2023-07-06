@@ -11,6 +11,9 @@ from site_shop.refund_management.models import RefundOrderItem
 from site_shop.shipping_management.models import ShippingRate
 
 
+from django.utils import timezone
+
+
 class OrderAddress(models.Model):
     receiver_name = models.CharField(max_length=100)
     receiver_phone = models.CharField(max_length=11)
@@ -46,10 +49,12 @@ PAYMENT_STATUS_CHOICES = [(status.name, status.value) for status in PaymentStatu
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='orders', blank=True, null=True)
 
-    slug = models.SlugField(max_length=6, unique=True, blank=True, null=True)
+    slug = models.SlugField(max_length=6, unique=True, blank=True, null=True)  # شماره سفارش
     # Status Fields -------------- Start
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, blank=True, null=True)
     delivery_status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, blank=True, null=True)
+    repayment_date_expire = models.DateTimeField(blank=True, null=True)
+
     # -------------- End
 
     coupon = models.ForeignKey(Coupon, on_delete=models.SET_NULL, blank=True, null=True)
@@ -85,6 +90,9 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.generate_unique_slug()
+        if not self.repayment_date_expire and self.payment_status == PaymentStatus.PENDING_PAYMENT.name:
+            self.repayment_date_expire = timezone.now() + datetime.timedelta(hours=1)
+
         if self.delivery_status != self._previous_status:
             if self.delivery_status == DeliveryStatus.PENDING.value:
                 print('Send SMS In ORDER')
@@ -97,12 +105,14 @@ class Order(models.Model):
             self._previous_status = self.delivery_status
         super().save(*args, **kwargs)
 
-    def generate_unique_slug(self):
+    @staticmethod
+    def generate_unique_slug():
         while True:
             import random
             slug = str(random.randint(1, 999999)).zfill(6)
             if not Order.objects.filter(slug=slug).exists():
                 return slug
+
     def __str__(self):
         return f"{self.user.email} - {self.user.phone} Count : ( {self.items.count()} ) : " \
                f"( {self.get_payment_status_display()} ) : ( {self.get_delivery_status_display()} ) "
@@ -114,12 +124,12 @@ class Order(models.Model):
     @staticmethod
     def is_valid_shipping_method(user_address: UserAddresses, shipping: ShippingRate):
         # Get the ShippingPrice object with the given ID
-        if not user_address or not shipping: return False , 'آدرس و یا شیوه ارسال نا معتبر'
+        if not user_address or not shipping: return False, 'آدرس و یا شیوه ارسال نا معتبر'
         if shipping.all_area:
             # Filter all ShippingPrice objects that are active and not equal to 'همه'
             other_shipping_areas = ShippingRate.objects.filter(all_area=True, is_active=True, is_delete=False)
             if user_address and user_address.receiver_province in [shipping_area.area for shipping_area in
-                                                                             other_shipping_areas]:
+                                                                   other_shipping_areas]:
                 # User's main address province matches an active shipping area
                 message = ResponseMessage.PAYMENT_NOT_VALID_SELECTED_SHIPPING.value
                 return False, message

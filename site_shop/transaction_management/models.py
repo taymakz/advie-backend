@@ -6,6 +6,7 @@ from django.db import models
 
 from site_account.user_management.models import User
 from site_shop.order_management.models import Order
+from django.utils.crypto import get_random_string
 
 
 class TransactionStatus(Enum):
@@ -25,21 +26,31 @@ class Transaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='transactions', blank=True, null=True)
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, related_name='transactions', blank=True, null=True)
     status = models.CharField(max_length=20, choices=TRANSACTION_STATUS_CHOICES, blank=True, null=True)
-    transaction_id = models.CharField(max_length=50, blank=True, null=True)
+    transaction_id = models.CharField(max_length=50, blank=True, null=True)  # شماره پیگیری
+    slug = models.SlugField(max_length=6, unique=True, blank=True, null=True)
 
     ref_id = models.CharField(max_length=255, blank=True, null=True)
-    reason = models.TextField(blank=True,null=True)
+    reason = models.TextField(blank=True, null=True)
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
+    is_active = models.BooleanField(default=True)
     is_delete = models.BooleanField(default=False)
 
     objects = TransactionManager()
+
     def save(self, *args, **kwargs):
-        if self.transaction_id is None and self.status == TransactionStatus.SUCCESS.value:
+
+        if self.transaction_id is None:
             transaction_id = randint(10000000, 99999999)
             while Transaction.objects.filter(transaction=transaction_id).exists():
                 transaction_id = randint(10000000, 99999999)
             self.transaction = transaction_id
+        if self.slug is None:
+            slug = get_random_string(6)
+            while Transaction.objects.filter(slug=slug).exists():
+                slug = get_random_string(6)
+
+            self.slug = slug
 
         super().save(*args, **kwargs)
 

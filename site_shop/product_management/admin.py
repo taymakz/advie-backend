@@ -19,6 +19,7 @@ class ProductVariantInLine(admin.TabularInline):
 
     ordering = ['order']
 
+
 class ProductPropertyInLine(admin.TabularInline):
     model = models.ProductProperty
     extra = 0
@@ -35,16 +36,18 @@ class CategoryForm(forms.ModelForm):
         model = models.Product
         fields = '__all__'
 
+
 class ProductAdmin(admin.ModelAdmin):
     list_filter = ['category', 'is_active']
     list_display = ['__str__', 'is_active',
-                    'visit_count']
-    list_editable = ['is_active']
-    search_fields = ['title_ir', 'title_en']
+                    'visit_count', 'is_delete']
+    list_editable = ['is_active', 'is_delete']
+    search_fields = ['title_ir', 'title_en','is_active','is_delete']
     inlines = [ProductVariantInLine, ProductPropertyInLine, ProductVisitInline]
     readonly_fields = ('visit_count',)
     prepopulated_fields = {'slug': ('title_en',)}
     form = CategoryForm
+
     def visit_count(self, obj):
         return obj.visits.count()
 

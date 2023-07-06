@@ -5,8 +5,9 @@ from rest_framework.permissions import AllowAny
 from site_api.api_configuration.enums import ResponseMessage
 from site_api.api_configuration.response import BaseResponse, PaginationApiResponse
 from site_shop.product_management.filters import ProductFilter
-from site_shop.product_management.models import Product
+from site_shop.product_management.models import Product, ProductVariant
 from site_shop.product_management.serializers import ProductDetailSerializer,ProductCardSerializer
+from django.db.models import Prefetch
 
 
 class ProductSearchView(ListAPIView):
@@ -14,7 +15,9 @@ class ProductSearchView(ListAPIView):
     permission_classes = [AllowAny]
 
     serializer_class = ProductCardSerializer
-    queryset = Product.objects.all()
+    queryset = Product.objects.filter(is_active=True, is_delete=False).prefetch_related(
+        Prefetch('variants', queryset=ProductVariant.objects.filter(is_active=True, is_delete=False))
+    )
     pagination_class = PaginationApiResponse
     filterset_class = ProductFilter
 

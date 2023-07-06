@@ -18,9 +18,7 @@ class ProductFilter(django_filters.FilterSet):
     special = django_filters.BooleanFilter(method='filter_special')
     sort = django_filters.CharFilter(method='filter_sort')
 
-
     def filter_search(self, queryset, name, value):
-        print(self.request.user)
         if value:
             user = self.request.user  # Get the current user
             if user.is_authenticated:
@@ -45,16 +43,21 @@ class ProductFilter(django_filters.FilterSet):
     def filter_special(self, queryset, name, value):
 
         if value:
-            return queryset.filter(variants__special_price__isnull=False,
-                                   variants__special_price_start_date__lte=timezone.now(),
-                                   variants__special_price_end_date__gte=timezone.now()
-                                   ).distinct()
+            return queryset.filter(
+                is_active=True,
+                is_delete=False,
+                variants__is_active=True,
+                variants__is_delete=False,
+                variants__special_price__isnull=False,
+                variants__special_price_start_date__lte=timezone.now(),
+                variants__special_price_end_date__gte=timezone.now()
+            ).distinct()
         return queryset
 
     def filter_available(self, queryset, name, value):
 
         if value:
-            return queryset.filter(variants__is_active=True, variants__stock__gt=0).distinct()
+            return queryset.filter(variants__is_active=True,variants__is_delete=False, variants__stock__gt=0).distinct()
         return queryset
 
     def filter_sort(self, queryset, name, value):

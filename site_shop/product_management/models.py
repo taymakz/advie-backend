@@ -62,6 +62,7 @@ class Product(models.Model):
         current_time = timezone.now()
         active_variants = self.variants.filter(
             is_active=True,
+            is_delete=False,
             special_price__isnull=False,
             special_price_start_date__lte=current_time,
             special_price_end_date__gte=current_time
@@ -79,6 +80,7 @@ class Product(models.Model):
         current_time = timezone.now()
         active_variants = self.variants.filter(
             is_active=True,
+            is_delete=False,
             special_price__isnull=False,
             special_price_start_date__lte=current_time,
             special_price_end_date__gte=current_time
@@ -101,19 +103,11 @@ class Product(models.Model):
                 return True
         return False
 
-    # @property
-    # def has_special_price(self):
-    #     for variant in self.variants.filter(
-    #             special_price__isnull=False,
-    #             special_price_start_date__lte=timezone.now(),
-    #             special_price_end_date__gte=timezone.now()).all():
-    #         if (variant.special_price or 0) > 0:
-    #             return True
-    #     return False
     @property
     def has_special_price(self):
         variants_with_special_price = self.variants.filter(
             is_active=True,
+            is_delete=False,
             special_price__isnull=False,
             special_price_start_date__lte=timezone.now(),
             special_price_end_date__gte=timezone.now()
@@ -143,7 +137,7 @@ class Product(models.Model):
         return visit_count
 
     def minimum_variant(self):
-        return self.variants.filter(is_active=True).order_by('price').first()
+        return self.variants.filter(is_active=True,is_delete=False).order_by('price').first()
 
     @property
     def minimum_variant_price(self):
@@ -258,6 +252,8 @@ class ProductVariant(models.Model):
     def save(self, *args, **kwargs):
         if self.stock <= 0:
             self.is_active = False
+            for product_in_basket in self.baskets.all():
+                product_in_basket.delete()
         super().save(*args, **kwargs)
 
     def is_special_price_active(self):

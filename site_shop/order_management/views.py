@@ -14,6 +14,19 @@ from site_shop.product_management.models import Product, ProductVariant
 from site_shop.transaction_management.models import Transaction
 
 
+class ValidateUserCurrentOrderView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        variant_ids = request.data.get('variants_id', [])
+
+        valid_ids = ProductVariant.objects.filter(id__in=variant_ids, stock__gt=0,is_active=True,is_delete=False).values_list('id', flat=True)
+
+        return BaseResponse(data=list(valid_ids), status=status.HTTP_204_NO_CONTENT,
+                            message=ResponseMessage.SUCCESS.value)
+
+
 class GetUserCurrentOrderView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -54,9 +67,10 @@ class AddItemToCurrentOrderView(APIView):
         try:
             product_id = request.data.get('product_id')
             variant_id = request.data.get('variant_id')
+            count = request.data.get('count')
 
-            product = Product.objects.filter(pk=product_id, is_active=True).first()
-            variant = ProductVariant.objects.filter(pk=variant_id, is_active=True).first()
+            product = Product.objects.filter(pk=product_id, is_active=True,is_delete=False).first()
+            variant = ProductVariant.objects.filter(pk=variant_id, is_active=True,is_delete=False).first()
             order, created = Order.objects.get_or_create(user=request.user,
                                                          payment_status=PaymentStatus.OPEN_ORDER.name, is_delete=False)
 
@@ -70,7 +84,7 @@ class AddItemToCurrentOrderView(APIView):
                                     message=ResponseMessage.ORDER_ITEM_DOES_NOT_EXIST_MORE_THAN.value.format(
                                         stock=variant.stock))
 
-            order_item.count += 1
+            order_item.count += count
             order_item.save()
 
             return BaseResponse(data=order_item.id, status=status.HTTP_200_OK,

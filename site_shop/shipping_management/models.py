@@ -44,7 +44,7 @@ class ShippingRate(models.Model):
 
 
     def calculate_price(self, order_price):
-        if self.pay_at_destination or order_price < self.free_shipping_threshold:
+        if self.pay_at_destination or (self.free_shipping_threshold and order_price > self.free_shipping_threshold):
             return 0
         else:
             return self.price

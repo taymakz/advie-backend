@@ -11,7 +11,8 @@ class CategoryBannerInLine(admin.StackedInline):
     ordering = ['order']
 
 class CategoryAdmin(MPTTModelAdmin):
-    list_display = ('title_en', 'title_ir', 'parent', 'slug', 'is_active')
+    list_display = ['title_en', 'title_ir', 'parent', 'slug', 'is_active','is_delete']
+    list_editable = ['title_ir','parent', 'slug','is_active','is_delete']
     prepopulated_fields = {'slug': ('title_en',)}
     mptt_indent_field = 'title_en'
     inlines = [CategoryBannerInLine]

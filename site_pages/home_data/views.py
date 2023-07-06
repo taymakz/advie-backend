@@ -17,17 +17,20 @@ class HomeDataView(generics.ListAPIView):
     serializer_class = SiteBannerSerializer
 
     def get(self, request, *args, **kwargs):
-
         # Get active banners
-        banners = SiteBanner.objects.filter(is_active=True)
+        banners = SiteBanner.objects.filter(is_active=True, is_delete=False)
         banner_serializer = self.get_serializer(banners, many=True)
 
         # Get most sale products
-        most_sale_products = Product.objects.filter(is_active=True).order_by('-date_created')[:10]
+        most_sale_products = Product.objects.filter(is_active=True, is_delete=False, variants__stock__gt=0,
+                                                    variants__is_active=True, variants__is_delete=False).order_by(
+            '-date_created')[:10]
         most_sale_products_serializer = ProductCardSerializer(most_sale_products, many=True)
 
         # Get latest products
-        latest_products = Product.objects.filter(is_active=True).order_by('-date_created')[:10]
+        latest_products = Product.objects.filter(is_active=True, is_delete=False, variants__stock__gt=0,
+                                                 variants__is_active=True, variants__is_delete=False).order_by(
+            '-date_created')[:10]
         latest_products_serializer = ProductCardSerializer(latest_products, many=True)
 
         # Return the data as JSON
@@ -39,5 +42,4 @@ class HomeDataView(generics.ListAPIView):
             'best_selling_products': latest_products_serializer.data,
         }
         return BaseResponse(data=response_data, status=status.HTTP_200_OK,
-                                message=ResponseMessage.SUCCESS.value)
-
+                            message=ResponseMessage.SUCCESS.value)

@@ -143,12 +143,13 @@ class RequestPaymentSubmitAPIView(APIView):
                                     message=ResponseMessage.PAYMENT_NOT_VALID_USED_COUPON.value)
             valid, message = used_coupon.validate_coupon(user_id=user.id, order_total_price=order_total_price)
             if valid:
-                coupon_effect_new_price, coupon_effect_dif_price = used_coupon.calculate_discount(order_total_price)
+                coupon_effect_new_price, coupon_effect_dif_price, percentage_effect = used_coupon.calculate_discount(order_total_price)
                 order_total_price -= coupon_effect_dif_price
             else:
                 return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                     message=ResponseMessage.PAYMENT_NOT_VALID_USED_COUPON.value)
-
+        order_total_price += current_order.shipping.calculate_price(
+                        order_price=order_total_price_before_coupon)
         # if Order Price is Free
         if order_total_price == 0:
             current_order.payment_status = PaymentStatus.PAID.name
@@ -255,7 +256,7 @@ class VerifyPaymentAPIView(APIView):
                     valid, message = current_order.coupon.validate_coupon(user_id=user.id,
                                                                           order_total_price=total_price)
                     if valid:
-                        new_price, dif_price = current_order.coupon.calculate_discount(current_order.get_total_price)
+                        new_price, dif_price , percentage_price= current_order.coupon.calculate_discount(current_order.get_total_price)
                         current_order.coupon_effect_price = dif_price
                     else:
                         pass
@@ -273,7 +274,6 @@ class VerifyPaymentAPIView(APIView):
             else:
                 errors = {
                     1: 'اطلاعات ارسال شده ناقص است.',
-
                     -2: 'IP و يا مرچنت كد پذيرنده صحيح نيست.',
                     -3: 'با توجه به محدوديت هاي شاپرك امكان پرداخت با رقم درخواست شده ميسر نمي باشد.',
                     -4: 'سطح تاييد پذيرنده پايين تر از سطح نقره اي است.',
@@ -287,24 +287,10 @@ class VerifyPaymentAPIView(APIView):
                     -41: 'اطلاعات ارسال شده مربوط به AdditionalData غيرمعتبر ميباشد.',
                     -42: 'مدت زمان معتبر طول عمر شناسه پرداخت بايد بين 30 دقيه تا 45 روز مي باشد.',
                     -54: 'درخواست مورد نظر آرشيو شده است.',
-
-                    2: 'IP و يا مرچنت كد پذيرنده صحيح نيست.',
-                    3: 'با توجه به محدوديت هاي شاپرك امكان پرداخت با رقم درخواست شده ميسر نمي باشد.',
-                    4: 'سطح تاييد پذيرنده پايين تر از سطح نقره اي است.',
-                    11: 'درخواست مورد نظر يافت نشد.',
-                    12: 'امكان ويرايش درخواست ميسر نمي باشد.',
-                    21: 'هيچ نوع عمليات مالي براي اين تراكنش يافت نشد.',
-                    22: 'تراكنش نا موفق ميباشد.',
-                    33: 'رقم تراكنش با رقم پرداخت شده مطابقت ندارد.',
-                    34: 'سقف تقسيم تراكنش از لحاظ تعداد يا رقم عبور نموده است.',
-                    40: 'اجازه دسترسي به متد مربوطه وجود ندارد.',
-                    41: 'اطلاعات ارسال شده مربوط به AdditionalData غيرمعتبر ميباشد.',
-                    42: 'مدت زمان معتبر طول عمر شناسه پرداخت بايد بين 30 دقيه تا 45 روز مي باشد.',
-                    54: 'درخواست مورد نظر آرشيو شده است.',
-
                     100: 'عمليات با موفقيت انجام گرديده است.',
                     101: 'عمليات پرداخت موفق بوده و قبلا PaymentVerification تراكنش انجام شده است.'
                 }
+                print(response)
                 error_code = response['Status']
                 error_message = errors.get(error_code, 'خطای ناشناخته لطفا با پشتیبانی تماس بگیرید')
                 reason = f"Status: False,کد: {str(error_code)}, پیام: {error_message}"
