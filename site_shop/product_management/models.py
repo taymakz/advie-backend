@@ -187,14 +187,29 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         if self.sku is None:
-            sku = randint(10000, 99999)
-            while Product.objects.filter(sku=sku).exists():
-                sku = randint(10000, 99999)
-            self.sku = sku
+            self.sku = self.generate_sku()
 
         self.slug = slugify(self.title_en)
+        if not self.is_active:
+            baskets_to_delete = self.baskets.filter(
+                ~Q(order__payment_status=OrderModels.PaymentStatus.PAID.name)
+            )
+            for basket in baskets_to_delete:
+                basket_order = basket.order
+                basket.delete()
 
+                if basket_order.items.all().count() > 0:
+                    continue
+                if basket.order.payment_status == OrderModels.PaymentStatus.PENDING_PAYMENT.name:
+                    basket.order.is_delete = True
+                    basket.order.save()
         super().save(*args, **kwargs)
+
+    def generate_sku(self):
+        sku = randint(10000, 99999)
+        while Product.objects.filter(sku=sku).exists():
+            sku = randint(10000, 99999)
+        return sku
 
     def __str__(self):
         return f"{self.title_ir} - {self.title_en}"
@@ -254,6 +269,13 @@ class ProductVariant(models.Model):
     class Meta:
         ordering = ('order',)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._previous_stock = self.stock
+
+    def clean(self):
+        self._previous_stock = self.stock
+
     def save(self, *args, **kwargs):
         if self.stock <= 0:
             self.is_active = False
@@ -262,14 +284,22 @@ class ProductVariant(models.Model):
                 ~Q(order__payment_status=OrderModels.PaymentStatus.PAID.name)
             )
             for basket in baskets_to_delete:
+                basket_order = basket.order
                 basket.delete()
 
-                if basket.order.items.all().exists():
+                if basket_order.items.all().count() > 0:
                     continue
                 if basket.order.payment_status == OrderModels.PaymentStatus.PENDING_PAYMENT.name:
                     basket.order.is_delete = True
                     basket.order.save()
-
+        if self._previous_stock != self.stock:
+            baskets = self.baskets.filter(
+                ~Q(order__payment_status=OrderModels.PaymentStatus.PAID.name)
+            ).filter(count__gt=self.stock)
+            for item in baskets:
+                item.count = self.stock
+                item.save()
+            self._previous_stock = self.stock
         super().save(*args, **kwargs)
 
     def is_special_price_active(self):
