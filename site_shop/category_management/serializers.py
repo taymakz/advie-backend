@@ -59,7 +59,7 @@ class CategoryWithProductsSerializer(serializers.ModelSerializer):
 class CategoryBannerSerializer(serializers.ModelSerializer):
     class Meta:
         model = CategoryBanner
-        fields = '__all__'
+        exclude = 'is_active'
 
 
 class SearchCategorySerializer(serializers.ModelSerializer):
@@ -76,5 +76,6 @@ class SearchCategorySerializer(serializers.ModelSerializer):
 
     def get_url(self, obj):
         return obj.get_absolute_url()
+
     def get_image(self, obj):
         return obj.image.name

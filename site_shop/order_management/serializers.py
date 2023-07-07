@@ -9,8 +9,7 @@ from site_shop.transaction_management.models import Transaction
 class OrderAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderAddress
-        exclude =['is_delete']
-
+        fields = '__all__'
 
 
 # Current Order , Item Serializer ( Not Paid )
@@ -57,7 +56,6 @@ class CurrentOrderItemSerializer(serializers.ModelSerializer):
     def get_product_title_en(self, obj):
         return obj.product.title_en
 
-
     def get_product_image(self, obj):
         return obj.product.image.name
 
@@ -66,7 +64,7 @@ class CurrentOrderItemSerializer(serializers.ModelSerializer):
 
 
 class CurrentOrderSerializer(serializers.ModelSerializer):
-    items = CurrentOrderItemSerializer(many=True)
+    items = serializers.SerializerMethodField()
     shipping = ShippingRateSerializer()
 
     class Meta:
@@ -77,6 +75,11 @@ class CurrentOrderSerializer(serializers.ModelSerializer):
             'shipping'
         )
 
+    def get_items(self, obj):
+        items = obj.items.filter(is_delete=False, product__is_delete=False, variant__is_delete=False,
+                                 variant__is_active=True, product__is_active=True)
+        serializer = CurrentOrderItemSerializer(items, many=True)
+        return serializer.data
 
 
 # Order , Item Serializer ( Paid )

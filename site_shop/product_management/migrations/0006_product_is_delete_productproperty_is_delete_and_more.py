@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('product_management', '0005_alter_productvariant_options_productvariant_order'),
     ]

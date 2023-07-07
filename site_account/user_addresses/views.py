@@ -3,10 +3,10 @@ from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from site_api.api_configuration.enums import ResponseMessage
-from site_api.api_configuration.response import BaseResponse
 from site_account.user_addresses.models import UserAddresses
 from site_account.user_addresses.serializers import AddressSerializer
+from site_api.api_configuration.enums import ResponseMessage
+from site_api.api_configuration.response import BaseResponse
 
 
 class AddressListCreateUpdateDestroyAPIView(APIView):
@@ -26,9 +26,7 @@ class AddressListCreateUpdateDestroyAPIView(APIView):
     def post(self, request):
         serializer = AddressSerializer(data=request.data)
         if serializer.is_valid():
-
             serializer.save(user=request.user)
-
 
             response = BaseResponse(
                 data=serializer.data,

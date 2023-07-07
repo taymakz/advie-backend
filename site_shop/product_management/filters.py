@@ -1,13 +1,10 @@
 import django_filters
+from django.db.models import Q, Max, Min
+from django.utils import timezone
 
 from site_account.user_management.models import UserSearchHistory
 from .models import Product
-from django.db.models import Q, Max, Min
-
 from ..category_management.models import Category
-from django.utils import timezone
-
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 class ProductFilter(django_filters.FilterSet):
@@ -45,9 +42,7 @@ class ProductFilter(django_filters.FilterSet):
         if value:
             return queryset.filter(
                 is_active=True,
-                is_delete=False,
                 variants__is_active=True,
-                variants__is_delete=False,
                 variants__special_price__isnull=False,
                 variants__special_price_start_date__lte=timezone.now(),
                 variants__special_price_end_date__gte=timezone.now()
@@ -57,7 +52,7 @@ class ProductFilter(django_filters.FilterSet):
     def filter_available(self, queryset, name, value):
 
         if value:
-            return queryset.filter(variants__is_active=True,variants__is_delete=False, variants__stock__gt=0).distinct()
+            return queryset.filter(variants__is_active=True, variants__stock__gt=0).distinct()
         return queryset
 
     def filter_sort(self, queryset, name, value):

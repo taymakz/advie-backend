@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('transaction_management', '0004_alter_transaction_transaction_id'),
     ]

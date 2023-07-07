@@ -53,11 +53,12 @@ class User(AbstractUser):
     national_code = models.CharField(max_length=10, null=True, blank=True)
     verified = models.BooleanField(default=False)
     forgot_password_token = models.UUIDField(null=True, blank=True)
-    is_delete = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = []
     objects = UserManager()
+
+    is_delete = models.BooleanField(default=False)
 
     def generate_forgot_password_token(self):
         self.forgot_password_token = uuid.uuid4()

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('order_management', '0004_alter_order_payment_status'),
     ]
@@ -13,6 +12,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='order',
             name='payment_status',
-            field=models.CharField(choices=[('PAID', 'پرداخت شده'), ('PENDING_PAYMENT', 'در انتظار پرداخت')], max_length=20),
+            field=models.CharField(choices=[('PAID', 'پرداخت شده'), ('PENDING_PAYMENT', 'در انتظار پرداخت')],
+                                   max_length=20),
         ),
     ]

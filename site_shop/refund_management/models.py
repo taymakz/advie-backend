@@ -3,7 +3,6 @@ from enum import Enum
 from django.db import models
 
 
-
 class RefundStatus(Enum):
     NOT_REQUESTED = "درخواست نشده"
     PENDING = "در انتظار تایید"
@@ -18,11 +17,13 @@ class RefundOrderItem(models.Model):
     status = models.CharField(max_length=20, choices=REFUND_STATUS_CHOICES, default=RefundStatus.NOT_REQUESTED.value)
     reject_message = models.TextField(blank=True, null=True)
 
+    refunded_price = models.TextField(blank=True, null=True)
+
     date_requested = models.DateTimeField(blank=True, null=True)
 
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
+
     date_updated = models.DateTimeField(auto_now=True, editable=False)
-    is_delete = models.BooleanField(default=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

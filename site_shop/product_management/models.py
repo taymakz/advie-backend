@@ -1,9 +1,10 @@
+from enum import Enum
 from random import randint
 
 from ckeditor_uploader.fields import RichTextUploadingField
 from django.core.cache import cache
 from django.db import models
-from django.db.models import Case, BooleanField, Value, When, Max
+from django.db.models import Case, BooleanField, Value, When, Max, Q
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -14,6 +15,7 @@ from imagekit.processors import ResizeToFill
 
 from site_account.user_management.models import User
 from site_shop.category_management.models import Category
+from site_shop.order_management import models as OrderModels
 from site_utils.image.get_file_ext import get_filename_ext
 
 
@@ -24,16 +26,21 @@ def upload_product_path(instance, filename):
     return f"images/product/{final_name}"
 
 
+class VariantSelectStyle(Enum):
+    RADIO_BOX = "Radio Box"
+    RADIO_COLOR = "Radio Color"
+    DROP_DOWN = "Drop down menu"
+
+
+VARIANT_SELECT_STYLE_CHOICES = [(style.name, style.value) for style in VariantSelectStyle]
+
+
 class VariantType(models.Model):
     title_ir = models.CharField(max_length=100)
     title_en = models.CharField(max_length=100)
-    SELECT_STYLE = (
-        ('RADIO', 'RADIO'),
-        ('DROP_DOWN', 'DROP_DOWN'),
-    )
-    select_style = models.CharField(max_length=20, choices=SELECT_STYLE, default="RADIO")
+    select_style = models.CharField(max_length=20, choices=VARIANT_SELECT_STYLE_CHOICES,
+                                    default=VariantSelectStyle.RADIO_BOX.name)
     is_none = models.BooleanField(default=False)
-    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.title_ir} - {self.title_en}"
@@ -52,17 +59,15 @@ class Product(models.Model):
     description = RichTextUploadingField(blank=True, null=True)
     variant_type = models.ForeignKey(VariantType, on_delete=models.DO_NOTHING, related_name="products")
     category = models.ManyToManyField(Category, related_name='products', db_index=True)
-    is_active = models.BooleanField(default=True)
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
-    is_delete = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     @property
     def get_longest_special_price_end_date(self):
         current_time = timezone.now()
         active_variants = self.variants.filter(
             is_active=True,
-            is_delete=False,
             special_price__isnull=False,
             special_price_start_date__lte=current_time,
             special_price_end_date__gte=current_time
@@ -80,7 +85,6 @@ class Product(models.Model):
         current_time = timezone.now()
         active_variants = self.variants.filter(
             is_active=True,
-            is_delete=False,
             special_price__isnull=False,
             special_price_start_date__lte=current_time,
             special_price_end_date__gte=current_time
@@ -104,10 +108,14 @@ class Product(models.Model):
         return False
 
     @property
+    def is_only_one_variant(self):
+        count = self.variants.filter(is_active=True).count()
+        return count == 1
+
+    @property
     def has_special_price(self):
         variants_with_special_price = self.variants.filter(
             is_active=True,
-            is_delete=False,
             special_price__isnull=False,
             special_price_start_date__lte=timezone.now(),
             special_price_end_date__gte=timezone.now()
@@ -137,7 +145,7 @@ class Product(models.Model):
         return visit_count
 
     def minimum_variant(self):
-        return self.variants.filter(is_active=True,is_delete=False).order_by('price').first()
+        return self.variants.filter(is_active=True).order_by('price').first()
 
     @property
     def minimum_variant_price(self):
@@ -215,7 +223,6 @@ def delete_old_image(sender, instance, **kwargs):
 
 class VariantPrefix(models.Model):
     name = models.CharField(max_length=100)
-    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name}"
@@ -227,7 +234,6 @@ class VariantValue(models.Model):
     prefix = models.ForeignKey(VariantPrefix, on_delete=models.CASCADE)
 
     color_code = models.CharField(max_length=100, null=True, blank=True, verbose_name="Color (Not Required)")
-    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.value} - {self.prefix}"
@@ -243,8 +249,7 @@ class ProductVariant(models.Model):
     special_price_end_date = models.DateTimeField(null=True, blank=True)
     stock = models.IntegerField(default=0)
     order = models.IntegerField(default=1, blank=True, null=True)
-    is_active = models.BooleanField(default=False)
-    is_delete = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ('order',)
@@ -252,8 +257,19 @@ class ProductVariant(models.Model):
     def save(self, *args, **kwargs):
         if self.stock <= 0:
             self.is_active = False
-            for product_in_basket in self.baskets.all():
-                product_in_basket.delete()
+        if not self.is_active:
+            baskets_to_delete = self.baskets.filter(
+                ~Q(order__payment_status=OrderModels.PaymentStatus.PAID.name)
+            )
+            for basket in baskets_to_delete:
+                basket.delete()
+
+                if basket.order.items.all().exists():
+                    continue
+                if basket.order.payment_status == OrderModels.PaymentStatus.PENDING_PAYMENT.name:
+                    basket.order.is_delete = True
+                    basket.order.save()
+
         super().save(*args, **kwargs)
 
     def is_special_price_active(self):
@@ -300,7 +316,6 @@ class ProductVisit(models.Model):
     product = models.ForeignKey('Product', on_delete=models.CASCADE, related_name='visits')
     ip = models.CharField(max_length=30, verbose_name='user ip')
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
-    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.product.title_en} / {self.ip}'
@@ -326,7 +341,6 @@ class ProductProperty(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='properties')
     property = models.ForeignKey(Property, on_delete=models.CASCADE)
     value = RichTextUploadingField(blank=True, null=True)
-    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return self.property.name

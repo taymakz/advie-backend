@@ -4,22 +4,18 @@ import json
 import requests
 from django.conf import settings
 from django.shortcuts import redirect
-from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from site_account.user_addresses.models import UserAddresses
 from site_api.api_configuration.enums import ResponseMessage
 from site_api.api_configuration.response import BaseResponse
-from site_account.user_addresses.models import UserAddresses
 from site_shop.coupon_management.models import Coupon
 from site_shop.order_management.models import Order, PaymentStatus, OrderAddress, DeliveryStatus
 from site_shop.shipping_management.models import ShippingRate
 from site_shop.transaction_management.models import Transaction, TransactionStatus
-from django.utils import timezone
-from datetime import timedelta
 
 if settings.ZARINPAL_SANDBOX:
     sandbox = 'sandbox'
@@ -36,30 +32,30 @@ email = ''
 mobile = ''
 CallbackURL = settings.BACKEND_URL
 
+from django.db.models import Q
+
 
 class CheckoutResultAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, transaction_id, transaction_slug):
-        # Filter the Transaction model based on the provided criteria
         try:
-            transaction = Transaction.objects.get(
+            # Filter the Transaction model based on the provided criteria
+            transaction = Transaction.objects.filter(
                 transaction_id=transaction_id,
                 slug=transaction_slug,
-                is_active=True,
-                is_delete=False
-            )
-            order = transaction.order
+                is_delete=False,
+                order__is_delete=False
+            ).filter(
+                Q(order__repayment_date_expire__lt=timezone.now()) | Q(order__repayment_date_expire__isnull=False)
+            ).select_related('order').first()
 
-            # Check if the Order repayment is expired
-            is_repayment_expired = False
-            if order and order.repayment_date_expire:
-                is_repayment_expired = order.repayment_date_expire < timezone.now()
-                if is_repayment_expired:
-                    transaction.is_active = False
-                    transaction.save()
-                    return BaseResponse(status=status.HTTP_404_NOT_FOUND)
-            formatted_repayment_expire_date = order.repayment_date_expire.strftime("%a %b %d %Y %H:%M:%S GMT%z (%Z)")
+            if not transaction:
+                return BaseResponse(status=status.HTTP_404_NOT_FOUND)
+
+            order = transaction.order
+            formatted_repayment_expire_date = order.repayment_date_expire.strftime(
+                "%a %b %d %Y %H:%M:%S GMT%z (%Z)") if order and order.repayment_date_expire else None
 
             # Prepare the CheckoutResultDTO
             result = {
@@ -68,7 +64,8 @@ class CheckoutResultAPIView(APIView):
                 'order_slug': order.slug if order else None,
                 'payment_date': transaction.date_created,
                 'repayment_date_expire': formatted_repayment_expire_date,
-                'is_repayment_expired': is_repayment_expired
+                'is_repayment_expired': bool(
+                    order and order.repayment_date_expire and order.repayment_date_expire < timezone.now())
             }
 
             return BaseResponse(data=result, status=status.HTTP_200_OK)

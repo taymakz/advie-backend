@@ -3,10 +3,10 @@ from random import randint
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.crypto import get_random_string
 
 from site_account.user_management.models import User
 from site_shop.order_management.models import Order
-from django.utils.crypto import get_random_string
 
 
 class TransactionStatus(Enum):
@@ -15,11 +15,6 @@ class TransactionStatus(Enum):
 
 
 TRANSACTION_STATUS_CHOICES = [(status.name, status.value) for status in TransactionStatus]
-
-
-class TransactionManager(models.Manager):
-    def get_success(self):
-        return self.filter(status=TransactionStatus.SUCCESS.value)
 
 
 class Transaction(models.Model):
@@ -33,10 +28,7 @@ class Transaction(models.Model):
     reason = models.TextField(blank=True, null=True)
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
-    is_active = models.BooleanField(default=True)
     is_delete = models.BooleanField(default=False)
-
-    objects = TransactionManager()
 
     def save(self, *args, **kwargs):
 

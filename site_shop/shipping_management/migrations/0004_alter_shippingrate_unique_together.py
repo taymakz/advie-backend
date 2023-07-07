@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('shipping_management', '0003_alter_shippingrate_unique_together'),
     ]

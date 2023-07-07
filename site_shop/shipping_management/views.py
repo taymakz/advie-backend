@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -13,7 +12,7 @@ from site_shop.shipping_management.serializers import ShippingRateSerializer
 class ShippingListAPIView(ListAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    queryset = ShippingRate.objects.filter(is_active=True,is_delete=False).all()
+    queryset = ShippingRate.objects.filter(is_active=True, shipping_service__is_active=True).all()
     serializer_class = ShippingRateSerializer
 
     def list(self, request, *args, **kwargs):

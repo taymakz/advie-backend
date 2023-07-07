@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('refund_management', '0001_initial'),
     ]
@@ -13,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='refundorderitem',
             name='status',
-            field=models.CharField(choices=[('NOT_REQUESTED', 'درخواست نشده'), ('PENDING', 'در انتظار تایید'), ('ACCEPTED', 'تایید شده'), ('REJECTED', 'درخواست رد شد')], default='درخواست نشده', max_length=20),
+            field=models.CharField(
+                choices=[('NOT_REQUESTED', 'درخواست نشده'), ('PENDING', 'در انتظار تایید'), ('ACCEPTED', 'تایید شده'),
+                         ('REJECTED', 'درخواست رد شد')], default='درخواست نشده', max_length=20),
         ),
     ]

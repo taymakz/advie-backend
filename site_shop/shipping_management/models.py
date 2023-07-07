@@ -19,7 +19,7 @@ class ShippingService(models.Model):
                                 format='PNG',
                                 options={'quality': 90})
     name = models.CharField(max_length=100)
-    is_delete = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name}"
@@ -36,12 +36,10 @@ class ShippingRate(models.Model):
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
     is_active = models.BooleanField(default=True)
-    is_delete = models.BooleanField(default=False)
 
     class Meta:
         ordering = ('order',)
-        unique_together = [("shipping_service", "area"),("shipping_service", "all_area")]
-
+        unique_together = [("shipping_service", "area", "is_active"), ("shipping_service", "all_area", "is_active")]
 
     def calculate_price(self, order_price):
         if self.pay_at_destination or (self.free_shipping_threshold and order_price > self.free_shipping_threshold):

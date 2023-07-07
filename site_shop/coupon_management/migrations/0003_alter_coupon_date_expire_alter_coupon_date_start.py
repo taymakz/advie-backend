@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('coupon_management', '0002_coupon_is_active_coupon_is_delete'),
     ]

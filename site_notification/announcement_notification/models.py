@@ -4,7 +4,6 @@ from django.db import models
 class Newsletter(models.Model):
     email = models.EmailField()
 
-
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
     is_delete = models.BooleanField(default=False)

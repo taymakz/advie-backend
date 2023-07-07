@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('website_banner', '0003_sitebanner_resize_height_sitebanner_resize_width'),
     ]

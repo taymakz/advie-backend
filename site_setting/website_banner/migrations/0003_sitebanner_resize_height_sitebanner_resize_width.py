@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('website_banner', '0002_alter_sitebanner_options_alter_sitebanner_image'),
     ]

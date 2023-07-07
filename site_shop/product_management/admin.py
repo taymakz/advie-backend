@@ -1,9 +1,8 @@
-from django.contrib import admin
-from . import models
-
 from django import forms
+from django.contrib import admin
 from mptt.forms import TreeNodeMultipleChoiceField
 
+from . import models
 from ..category_management.models import Category
 
 
@@ -44,10 +43,9 @@ class ProductAdmin(admin.ModelAdmin):
         'is_available_in_stock',
         'visit_count',
         'is_active',
-        'is_delete'
     ]
-    list_editable = ['is_active', 'is_delete']
-    search_fields = ['title_ir', 'title_en', 'is_active', 'is_delete']
+    list_editable = ['is_active']
+    search_fields = ['title_ir', 'title_en', 'is_active']
     inlines = [ProductVariantInLine, ProductPropertyInLine, ProductVisitInline]
     readonly_fields = ('visit_count',)
     prepopulated_fields = {'slug': ('title_en',)}

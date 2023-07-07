@@ -5,7 +5,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from site_account.user_management.models import User
@@ -578,14 +577,14 @@ class UserEditPassword(APIView):
         user = self.request.user
 
         if user.has_usable_password() and not user.check_password(current_password):
-            return BaseResponse(data={'error_input_name':'current_password'}, status=status.HTTP_400_BAD_REQUEST,
+            return BaseResponse(data={'error_input_name': 'current_password'}, status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.USER_PANEL_CURRENT_PASSWORD_WRONG.value)
         is_valid, message = validate_password(password)
         if not is_valid:
-            return BaseResponse(data={'error_input_name':'password'}, status=status.HTTP_400_BAD_REQUEST,
+            return BaseResponse(data={'error_input_name': 'password'}, status=status.HTTP_400_BAD_REQUEST,
                                 message=message)
         if password != confirm_password:
-            return BaseResponse(data={'error_input_name':'confirm_password'}, status=status.HTTP_400_BAD_REQUEST,
+            return BaseResponse(data={'error_input_name': 'confirm_password'}, status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.PASSWORD_CONFIRM_MISMATCH.value)
 
         user.set_password(password)

@@ -1,3 +1,4 @@
+from django.db.models import Prefetch
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
@@ -6,8 +7,7 @@ from site_api.api_configuration.enums import ResponseMessage
 from site_api.api_configuration.response import BaseResponse, PaginationApiResponse
 from site_shop.product_management.filters import ProductFilter
 from site_shop.product_management.models import Product, ProductVariant
-from site_shop.product_management.serializers import ProductDetailSerializer,ProductCardSerializer
-from django.db.models import Prefetch
+from site_shop.product_management.serializers import ProductDetailSerializer, ProductCardSerializer
 
 
 class ProductSearchView(ListAPIView):
@@ -15,18 +15,17 @@ class ProductSearchView(ListAPIView):
     permission_classes = [AllowAny]
 
     serializer_class = ProductCardSerializer
-    queryset = Product.objects.filter(is_active=True, is_delete=False).prefetch_related(
-        Prefetch('variants', queryset=ProductVariant.objects.filter(is_active=True, is_delete=False))
+    queryset = Product.objects.filter(is_active=True).prefetch_related(
+        Prefetch('variants', queryset=ProductVariant.objects.filter(is_active=True))
     )
     pagination_class = PaginationApiResponse
     filterset_class = ProductFilter
 
 
-
 class ProductDetailAPIView(RetrieveAPIView):
     authentication_classes = []
     permission_classes = [AllowAny]
-    queryset = Product.objects.filter(is_active=True,is_delete=False)
+    queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductDetailSerializer
     lookup_field = 'sku'
     lookup_url_kwarg = 'sku'

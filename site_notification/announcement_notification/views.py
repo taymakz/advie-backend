@@ -13,6 +13,7 @@ class NewsletterCreateView(CreateAPIView):
     serializer_class = NewsletterSerializer
     permission_classes = []
     authentication_classes = []
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('product_management', '0006_product_is_delete_productproperty_is_delete_and_more'),
     ]

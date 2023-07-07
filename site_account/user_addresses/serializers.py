@@ -4,7 +4,6 @@ from site_account.user_addresses.models import UserAddresses
 
 
 class AddressSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = UserAddresses
         fields = (
@@ -18,4 +17,3 @@ class AddressSerializer(serializers.ModelSerializer):
             'receiver_postal_code',
             'receiver_address',
         )
-

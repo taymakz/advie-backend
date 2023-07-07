@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('product_management', '0003_productvariant_special_price_end_date_and_more'),
     ]

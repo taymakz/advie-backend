@@ -6,7 +6,6 @@ from django.utils.crypto import get_random_string
 from jalali_date import date2jalali
 
 from site_account.user_management.models import User
-
 from site_utils.image.get_file_ext import get_filename_ext
 
 
@@ -46,10 +45,9 @@ class Coupon(models.Model):
     only_first_order = models.BooleanField(default=False)
     date_start = models.DateTimeField(blank=True, null=True)
     date_expire = models.DateTimeField(blank=True, null=True)
-    
+
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
-    is_active = models.BooleanField(default=False)
     is_delete = models.BooleanField(default=False)
 
     def __str__(self):

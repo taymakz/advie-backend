@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
@@ -10,10 +9,11 @@ from site_shop.category_management.serializers import CategorySerializer
 
 
 class CategoryListView(ListAPIView):
-    queryset = Category.objects.filter(level=0,is_delete=False)
+    queryset = Category.objects.filter(level=0)
     serializer_class = CategorySerializer
     authentication_classes = []
     permission_classes = [AllowAny]
+
     def list(self, request, *args, **kwargs):
         try:
             categories = self.get_queryset()

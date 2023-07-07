@@ -1,20 +1,19 @@
 from rest_framework import serializers
 
-from . import models
 from site_shop.category_management.models import Category
+from . import models
 
 
 class VariantTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.VariantType
-        exclude =['is_delete']
+        fields = '__all__'
 
 
 class VariantPrefixSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.VariantPrefix
-        exclude =['is_delete']
-
+        fields = '__all__'
 
 
 class VariantValueSerializer(serializers.ModelSerializer):
@@ -22,7 +21,7 @@ class VariantValueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.VariantValue
-        exclude =['is_delete']
+        fields = '__all__'
 
 
 class ProductVariantSerializer(serializers.ModelSerializer):
@@ -126,10 +125,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'breadcrumbs',
         )
 
-    def get_variants(self, obj:models.Product):
-            variants = obj.variants.filter(is_active=True)
-            serializer = ProductVariantSerializer(variants, many=True)
-            return serializer.data
+    def get_variants(self, obj: models.Product):
+        variants = obj.variants.filter(is_active=True)
+        serializer = ProductVariantSerializer(variants, many=True)
+        return serializer.data
 
     def get_longest_special_price_end_date(self, obj):
         return obj.get_longest_special_price_end_date
@@ -156,14 +155,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         return obj.image.name
 
-    # def get_related_products(self, obj):
-    #     category = obj.category
-    #     related_products = models.Product.objects.filter(
-    #         category__in=category.get_descendants(include_self=True)
-    #     ).exclude(id=obj.id)[:20]
-    #     serializer = ProductCardSerializer(related_products, many=True)
-    #     return serializer.data
-
 
 class ProductCardSerializer(serializers.ModelSerializer):
     price = serializers.SerializerMethodField()
@@ -189,6 +180,7 @@ class ProductCardSerializer(serializers.ModelSerializer):
             'special_price',
             'special_price_percent',
             'has_any_special_price',
+            'is_only_one_variant',
             'longest_special_price_end_date',
             'longest_special_price_start_date',
             'final_price',
@@ -198,6 +190,7 @@ class ProductCardSerializer(serializers.ModelSerializer):
 
     def get_longest_special_price_end_date(self, obj):
         return obj.get_longest_special_price_end_date
+
     def get_longest_special_price_start_date(self, obj):
         return obj.get_longest_special_price_start_date
 
@@ -225,6 +218,9 @@ class ProductCardSerializer(serializers.ModelSerializer):
     def get_is_available_in_stock(self, obj):
         return obj.is_available_in_stock
 
+    def get_is_only_one_variant(self, obj):
+        return obj.is_only_one_variant
+
 
 class SearchProductSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
@@ -244,5 +240,3 @@ class SearchProductSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         return obj.image.name
-
-

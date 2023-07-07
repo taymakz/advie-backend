@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('user_addresses', '0002_rename_address_useraddresses_receiver_address_and_more'),
     ]

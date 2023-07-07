@@ -11,7 +11,8 @@ class ActivateNewsletterEmail(View):
     def get(self, request, activate_link):
         if not activate_link: return redirect(
             f"{FRONTEND_URL}/vf/tm?f={ResponseMessage.EMAIL_NEWSLETTER_ACTIVATION_FAILED.value}")
-        link: VerifyNewsletterService = VerifyNewsletterService.objects.filter(activate_link=activate_link,is_delete=False).first()
+        link: VerifyNewsletterService = VerifyNewsletterService.objects.filter(activate_link=activate_link,
+                                                                               is_delete=False).first()
         if not link or link.is_expired():
             return redirect(
                 f"{FRONTEND_URL}/vf/tm?f={ResponseMessage.EMAIL_NEWSLETTER_ACTIVATION_FAILED.value}")

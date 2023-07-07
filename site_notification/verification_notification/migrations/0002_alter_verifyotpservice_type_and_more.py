@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('verification_notification', '0001_initial'),
     ]
@@ -18,6 +17,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='verifyotpservice',
             name='usage',
-            field=models.CharField(choices=[('AUTHENTICATE', 'احراز هویت'), ('RESET_PASSWORD', 'بازیابی کلمه عبور'), ('VERIFY', 'تایید')], default='AUTHENTICATE', max_length=14),
+            field=models.CharField(
+                choices=[('AUTHENTICATE', 'احراز هویت'), ('RESET_PASSWORD', 'بازیابی کلمه عبور'), ('VERIFY', 'تایید')],
+                default='AUTHENTICATE', max_length=14),
         ),
     ]

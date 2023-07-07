@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('refund_management', '0002_alter_refundorderitem_status'),
     ]

@@ -11,17 +11,18 @@ from site_shop.order_management.models import Order, OrderItem, PaymentStatus
 from site_shop.order_management.serializers import UserPaidOrderListSerializer, OrderDetailSerializer, \
     CurrentOrderSerializer
 from site_shop.product_management.models import Product, ProductVariant
-from site_shop.transaction_management.models import Transaction
+from site_shop.transaction_management.models import Transaction, TransactionStatus
 
 
-class ValidateUserCurrentOrderView(APIView):
+class ValidateUserCurrentLocalOrderView(APIView):
     authentication_classes = []
     permission_classes = []
 
     def post(self, request):
         variant_ids = request.data.get('variants_id', [])
 
-        valid_ids = ProductVariant.objects.filter(id__in=variant_ids, stock__gt=0,is_active=True,is_delete=False).values_list('id', flat=True)
+        valid_ids = ProductVariant.objects.filter(id__in=variant_ids, stock__gt=0, is_active=True).values_list('id',
+                                                                                                               flat=True)
 
         return BaseResponse(data=list(valid_ids), status=status.HTTP_204_NO_CONTENT,
                             message=ResponseMessage.SUCCESS.value)
@@ -50,6 +51,7 @@ class GetUserCurrentOrderView(APIView):
                         order.shipping = None
                         order.address = None
                         order.save()
+
                 serializer = CurrentOrderSerializer(order)
 
             return BaseResponse(data=serializer.data, status=status.HTTP_200_OK,
@@ -69,8 +71,8 @@ class AddItemToCurrentOrderView(APIView):
             variant_id = request.data.get('variant_id')
             count = request.data.get('count')
 
-            product = Product.objects.filter(pk=product_id, is_active=True,is_delete=False).first()
-            variant = ProductVariant.objects.filter(pk=variant_id, is_active=True,is_delete=False).first()
+            product = Product.objects.filter(pk=product_id, is_active=True).first()
+            variant = ProductVariant.objects.filter(pk=variant_id, is_active=True).first()
             order, created = Order.objects.get_or_create(user=request.user,
                                                          payment_status=PaymentStatus.OPEN_ORDER.name, is_delete=False)
 
@@ -102,7 +104,8 @@ class IncreaseCurrentOrderItemCountView(APIView):
         try:
             item_id = request.data.get('item_id')
             order_item = OrderItem.objects.get(id=item_id, order__user=self.request.user,
-                                               order__payment_status=PaymentStatus.OPEN_ORDER.name)
+                                               order__payment_status=PaymentStatus.OPEN_ORDER.name,
+                                               order__is_delete=False)
             variant = order_item.variant
             if variant.stock <= 0:
                 return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
@@ -128,7 +131,8 @@ class DecreaseCurrentOrderItemCountView(APIView):
             item_id = request.data.get('item_id')
 
             order_item = OrderItem.objects.get(id=item_id, order__user=self.request.user,
-                                               order__payment_status=PaymentStatus.OPEN_ORDER.name)
+                                               order__payment_status=PaymentStatus.OPEN_ORDER.name,
+                                               order__is_delete=False)
             variant = order_item.variant
             if variant.stock == 1:
                 return None
@@ -151,7 +155,8 @@ class RemoveCurrentOrderItemView(APIView):
             item_id = request.data.get('item_id')
 
             order_item = OrderItem.objects.get(id=item_id, order__user=self.request.user,
-                                               order__payment_status=PaymentStatus.OPEN_ORDER.name)
+                                               order__payment_status=PaymentStatus.OPEN_ORDER.name,
+                                               order__is_delete=False)
             order_item.delete()
             return BaseResponse(status=status.HTTP_200_OK,
                                 message=ResponseMessage.ORDER_ITEM_REMOVED.value)
@@ -179,9 +184,10 @@ class UserPaidOrderDetailAPIView(RetrieveAPIView):
 
     def get_object(self):
         transaction_id = self.kwargs.get('id')
-        transaction = Transaction.objects.get_success().filter(transaction_id=transaction_id,
-                                                               user=self.request.user).first()
-        return transaction.order
+        requested_transaction = Transaction.objects.filter(transaction_id=transaction_id,
+                                                           user=self.request.user,
+                                                           status=TransactionStatus.SUCCESS.name).first()
+        return requested_transaction.order
 
     def get(self, request, *args, **kwargs):
         order = self.get_object()

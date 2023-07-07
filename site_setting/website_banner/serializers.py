@@ -1,9 +1,11 @@
 from rest_framework import serializers
+
 from . import models
 
 
 class SiteBannerSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
+
     class Meta:
         model = models.SiteBanner
         fields = (
@@ -13,5 +15,6 @@ class SiteBannerSerializer(serializers.ModelSerializer):
             'url',
             'position',
         )
-    def get_image(self,obj):
+
+    def get_image(self, obj):
         return obj.image.name

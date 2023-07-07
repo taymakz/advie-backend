@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('user_addresses', '0003_alter_useraddresses_receiver_family_and_more'),
     ]

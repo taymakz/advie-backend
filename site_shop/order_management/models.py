@@ -2,17 +2,15 @@ from datetime import timedelta
 from enum import Enum
 
 from django.db import models
+from django.utils import timezone
 
-from site_api.api_configuration.enums import ResponseMessage
 from site_account.user_addresses.models import UserAddresses
 from site_account.user_management.models import User
+from site_api.api_configuration.enums import ResponseMessage
 from site_shop.coupon_management.models import Coupon
 from site_shop.product_management.models import Product, ProductVariant
 from site_shop.refund_management.models import RefundOrderItem
 from site_shop.shipping_management.models import ShippingRate
-
-
-from django.utils import timezone
 
 
 class OrderAddress(models.Model):
@@ -23,7 +21,6 @@ class OrderAddress(models.Model):
     receiver_postal_code = models.CharField(max_length=100)
     receiver_address = models.CharField(max_length=300)
     receiver_national_code = models.CharField(max_length=11)
-    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.receiver_name} {self.receiver_phone}"
@@ -48,7 +45,7 @@ PAYMENT_STATUS_CHOICES = [(status.name, status.value) for status in PaymentStatu
 
 
 class Order(models.Model):
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='orders', blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
 
     slug = models.SlugField(max_length=6, unique=True, blank=True, null=True)  # شماره سفارش
     # Status Fields -------------- Start
@@ -58,9 +55,9 @@ class Order(models.Model):
 
     # -------------- End
 
-    coupon = models.ForeignKey(Coupon, on_delete=models.SET_NULL, blank=True, null=True)
-    shipping = models.ForeignKey(ShippingRate, on_delete=models.SET_NULL, related_name='orders', blank=True, null=True)
-    address = models.ForeignKey(OrderAddress, on_delete=models.SET_NULL, blank=True, null=True)
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name='orders', blank=True, null=True)
+    shipping = models.ForeignKey(ShippingRate, on_delete=models.CASCADE, related_name='orders', blank=True, null=True)
+    address = models.ForeignKey(OrderAddress, on_delete=models.CASCADE, related_name='orders', blank=True, null=True)
 
     # Fields that Fill After Payment -------------- Start
 
@@ -152,12 +149,14 @@ class Order(models.Model):
     def get_total_price(self):
         amount = 0
         if self.is_paid:
-            for item in self.items.all():
+            for item in self.items.filter(is_delete=False, product__is_delete=False, variant__is_delete=False,
+                                          variant__is_active=True, product__is_active=True):
                 amount += item.final_price
             if self.coupon_effect_price is not None:
                 amount -= self.coupon_effect_price
         else:
-            for item in self.items.all():
+            for item in self.items.filter(is_delete=False, product__is_delete=False, variant__is_delete=False,
+                                          variant__is_active=True, product__is_active=True):
                 amount += item.get_total_price
         return amount
 
@@ -191,7 +190,6 @@ class OrderItem(models.Model):
 
     refund = models.ForeignKey(RefundOrderItem, on_delete=models.CASCADE, related_name='order_item', blank=True,
                                null=True)
-    is_delete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.order.user.email} - {self.order.user.phone} " \

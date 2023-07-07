@@ -58,7 +58,6 @@ if os.environ.get('LOCAL_STORAGE') == 'True':
             # Fixtures are being loaded, so skip resizing
             return
         if instance.image:
-
             # Get resize dimensions
             width, height = instance.resize_width, instance.resize_height
 
@@ -73,10 +72,8 @@ else:
             # Fixtures are being loaded, so skip resizing
             return
         if instance.image:
-
             # Get resize dimensions
             width, height = instance.resize_width, instance.resize_height
-
 
             # Open the image using storage API
             with default_storage.open(instance.image.name, 'rb') as file:

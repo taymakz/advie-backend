@@ -28,11 +28,10 @@ class Category(MPTTModel):
     display_title = models.CharField(max_length=100, db_index=True)
     slug = models.SlugField(max_length=100, db_index=True)
     order = models.IntegerField(default=1, blank=True, null=True)
-    is_active = models.BooleanField(default=True)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
-    is_delete = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     class MPTTMeta:
         order_insertion_by = ['order']
@@ -94,7 +93,7 @@ class CategoryBanner(models.Model):
     order = models.IntegerField(default=1, blank=True, null=True)
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
-    is_delete = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ('order',)

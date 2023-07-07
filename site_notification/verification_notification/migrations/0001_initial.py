@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,7 +15,9 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('type', models.CharField(choices=[('phone', 'تلفن'), ('email', 'ایمیل')], max_length=5)),
-                ('usage', models.CharField(choices=[('authenticate', 'احراز هویت'), ('reset_password', 'بازیابی کلمه عبور'), ('confirm', 'تایید')], default='authenticate', max_length=14)),
+                ('usage', models.CharField(
+                    choices=[('authenticate', 'احراز هویت'), ('reset_password', 'بازیابی کلمه عبور'),
+                             ('confirm', 'تایید')], default='authenticate', max_length=14)),
                 ('to', models.CharField(max_length=355)),
                 ('code', models.CharField(max_length=5)),
                 ('expire_date', models.DateTimeField()),

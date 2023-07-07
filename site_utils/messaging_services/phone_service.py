@@ -4,7 +4,7 @@ api_key = "tiFfLmfYlgQDqrclxgMyx2DnGx9nrSZZBfpLnbd_EQc="
 sms = Client(api_key)
 
 
-def send_otp_phone(to,code):
+def send_otp_phone(to, code):
     pattern_values = {
         "code": str(code),
     }
@@ -17,7 +17,7 @@ def send_otp_phone(to,code):
     )
 
 
-def send_order_status_phone(to,id,pattern):
+def send_order_status_phone(to, id, pattern):
     pattern_values = {
         "id": id,
     }

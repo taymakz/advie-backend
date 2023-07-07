@@ -1,9 +1,8 @@
-from pathlib import Path
-from datetime import timedelta
-
 import os
-from dotenv import load_dotenv
+from datetime import timedelta
+from pathlib import Path
 
+from dotenv import load_dotenv
 
 # import sys
 # sys.stdout.reconfigure(encoding='utf-8')
@@ -27,7 +26,6 @@ BACKEND_URL = os.environ.get('BACKEND_URL')
 # Zarin Pal Config
 ZARINPAL_MERCHANT = os.environ.get('ZARINPAL_MERCHANT')
 ZARINPAL_SANDBOX = os.environ.get('ZARINPAL_SANDBOX') == 'True'
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
