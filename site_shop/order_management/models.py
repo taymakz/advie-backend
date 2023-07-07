@@ -80,19 +80,11 @@ class Order(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._previous_status = self.delivery_status
+        self.__original_status = self.delivery_status
 
-    def clean(self):
-        self._previous_status = self.delivery_status
-
-    def save(self, *args, **kwargs):
-
-        if not self.slug:
-            self.slug = self.generate_unique_slug()
-        if not self.repayment_date_expire and self.payment_status == PaymentStatus.PENDING_PAYMENT.name:
-            self.repayment_date_expire = timezone.now() + timedelta(hours=1)
-
-        if self.delivery_status != self._previous_status:
+    def clean_fields(self, exclude=None):
+        super().clean_fields(exclude=exclude)
+        if self.delivery_status != self.__original_status:
             if self.delivery_status == DeliveryStatus.PENDING.value:
                 print('Send SMS In ORDER')
             if self.delivery_status == DeliveryStatus.PROCESSING.value:
@@ -101,7 +93,16 @@ class Order(models.Model):
                 import datetime
                 self.shipped_date = datetime.date.today()
                 print('Send SMS In ORDER')
-            self._previous_status = self.delivery_status
+            self._previous_delivery_status = self.delivery_status
+
+    def save(self, *args, **kwargs):
+
+        if not self.slug:
+            self.slug = self.generate_unique_slug()
+        if not self.repayment_date_expire and self.payment_status == PaymentStatus.PENDING_PAYMENT.name:
+            self.repayment_date_expire = timezone.now() + timedelta(hours=1)
+
+        self._previous_status = self.delivery_status
         super().save(*args, **kwargs)
 
     @staticmethod
