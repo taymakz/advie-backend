@@ -55,6 +55,10 @@ class CheckoutResultAPIView(APIView):
             is_repayment_expired = False
             if order and order.repayment_date_expire:
                 is_repayment_expired = order.repayment_date_expire < timezone.now()
+                if is_repayment_expired:
+                    transaction.is_active = False
+                    transaction.save()
+                    return BaseResponse(status=status.HTTP_404_NOT_FOUND)
             formatted_repayment_expire_date = order.repayment_date_expire.strftime("%a %b %d %Y %H:%M:%S GMT%z (%Z)")
 
             # Prepare the CheckoutResultDTO
@@ -308,7 +312,6 @@ class VerifyPaymentAPIView(APIView):
                 transaction = Transaction.objects.create(user=user, order=current_order,
                                                          status=TransactionStatus.SUCCESS.name,
                                                          ref_id=response['RefID'])
-                transaction.save()
                 return redirect(
                     f"{settings.FRONTEND_URL}/checkout/result/{transaction.transaction_id}/{transaction.slug}/")
 

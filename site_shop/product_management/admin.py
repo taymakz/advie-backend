@@ -39,10 +39,15 @@ class CategoryForm(forms.ModelForm):
 
 class ProductAdmin(admin.ModelAdmin):
     list_filter = ['category', 'is_active']
-    list_display = ['__str__', 'is_active',
-                    'visit_count', 'is_delete']
+    list_display = [
+        '__str__',
+        'is_available_in_stock',
+        'visit_count',
+        'is_active',
+        'is_delete'
+    ]
     list_editable = ['is_active', 'is_delete']
-    search_fields = ['title_ir', 'title_en','is_active','is_delete']
+    search_fields = ['title_ir', 'title_en', 'is_active', 'is_delete']
     inlines = [ProductVariantInLine, ProductPropertyInLine, ProductVisitInline]
     readonly_fields = ('visit_count',)
     prepopulated_fields = {'slug': ('title_en',)}
@@ -51,7 +56,11 @@ class ProductAdmin(admin.ModelAdmin):
     def visit_count(self, obj):
         return obj.visits.count()
 
+    def is_available_in_stock(self, obj):
+        return obj.is_available_in_stock
+
     visit_count.short_description = 'Visit Count'
+    is_available_in_stock.short_description = 'Quantity'
 
 
 admin.site.register(models.Product, ProductAdmin)
