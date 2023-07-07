@@ -36,7 +36,6 @@ class SiteBanner(models.Model):
     url = models.URLField(blank=True, null=True)
     order = models.IntegerField(default=1, blank=True, null=True)
     is_active = models.BooleanField(default=True)
-    is_delete = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
 

@@ -19,15 +19,13 @@ class HomeDataView(generics.ListAPIView):
 
     def get(self, request, *args, **kwargs):
         # Get active banners
-        banners = SiteBanner.objects.filter(is_active=True, is_delete=False)
+        banners = SiteBanner.objects.filter(is_active=True)
         banner_serializer = self.get_serializer(banners, many=True)
 
         # Get Special sale products
         special_sale_products = Product.objects.filter(
             is_active=True,
-            is_delete=False,
             variants__is_active=True,
-            variants__is_delete=False,
             variants__special_price__isnull=False,
             variants__special_price_start_date__lte=timezone.now(),
             variants__special_price_end_date__gte=timezone.now()
@@ -37,18 +35,18 @@ class HomeDataView(generics.ListAPIView):
         special_sale_products_serializer = ProductCardSerializer(special_sale_products, many=True)
 
         # Get latest products
-        latest_products = Product.objects.filter(is_active=True, is_delete=False, variants__stock__gt=0,
-                                                 variants__is_active=True, variants__is_delete=False).order_by(
+        latest_products = Product.objects.filter(is_active=True, variants__stock__gt=0,
+                                                 variants__is_active=True).order_by(
             '-date_created')[:10]
         latest_products_serializer = ProductCardSerializer(latest_products, many=True)
 
         # Get most sale products
         most_sale_products = Product.objects.filter(
             is_active=True,
-            is_delete=False,
+
             variants__stock__gt=0,
             variants__is_active=True,
-            variants__is_delete=False,
+
             baskets__order__payment_status=PaymentStatus.PAID.name,
 
         ).annotate(
