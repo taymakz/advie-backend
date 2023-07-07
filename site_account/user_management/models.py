@@ -20,7 +20,10 @@ class UserManager(BaseUserManager):
         phone = phone or None  # set default value if phone is not provided
         user = self.model(email=email, phone=phone, **extra_fields)
 
-        user.set_unusable_password()
+        if password is not None:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
         user.save(using=self._db)
         return user
 

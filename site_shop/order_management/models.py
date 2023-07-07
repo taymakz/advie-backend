@@ -86,6 +86,7 @@ class Order(models.Model):
         self._previous_status = self.delivery_status
 
     def save(self, *args, **kwargs):
+
         if not self.slug:
             self.slug = self.generate_unique_slug()
         if not self.repayment_date_expire and self.payment_status == PaymentStatus.PENDING_PAYMENT.name:

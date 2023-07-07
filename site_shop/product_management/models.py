@@ -271,12 +271,21 @@ class ProductVariant(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._previous_stock = self.stock
+        self.__original_stock = self.stock
 
-    def clean(self):
-        self._previous_stock = self.stock
+    def clean_fields(self, exclude=None):
+        super().clean_fields(exclude=exclude)
+        if self.stock != self.__original_stock:
+            baskets = self.baskets.filter(
+                ~Q(order__payment_status=OrderModels.PaymentStatus.PAID.name)
+            ).filter(count__gt=self.stock)
+            for item in baskets:
+                item.count = self.stock
+                item.save()
+            self._previous_stock = self.stock
 
     def save(self, *args, **kwargs):
+
         if self.stock <= 0:
             self.is_active = False
         if not self.is_active:
@@ -292,14 +301,8 @@ class ProductVariant(models.Model):
                 if basket.order.payment_status == OrderModels.PaymentStatus.PENDING_PAYMENT.name:
                     basket.order.is_delete = True
                     basket.order.save()
-        if self._previous_stock != self.stock:
-            baskets = self.baskets.filter(
-                ~Q(order__payment_status=OrderModels.PaymentStatus.PAID.name)
-            ).filter(count__gt=self.stock)
-            for item in baskets:
-                item.count = self.stock
-                item.save()
-            self._previous_stock = self.stock
+                    basket.order.save()
+
         super().save(*args, **kwargs)
 
     def is_special_price_active(self):
