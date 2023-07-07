@@ -125,7 +125,7 @@ class Order(models.Model):
         if not user_address or not shipping: return False, 'آدرس و یا شیوه ارسال نا معتبر'
         if shipping.all_area:
             # Filter all ShippingPrice objects that are active and not equal to 'همه'
-            other_shipping_areas = ShippingRate.objects.filter(all_area=True, is_active=True, is_delete=False)
+            other_shipping_areas = ShippingRate.objects.filter(all_area=True, is_active=True)
             if user_address and user_address.receiver_province in [shipping_area.area for shipping_area in
                                                                    other_shipping_areas]:
                 # User's main address province matches an active shipping area
@@ -149,14 +149,12 @@ class Order(models.Model):
     def get_total_price(self):
         amount = 0
         if self.is_paid:
-            for item in self.items.filter(is_delete=False, product__is_delete=False, variant__is_delete=False,
-                                          variant__is_active=True, product__is_active=True):
+            for item in self.items.filter(variant__is_active=True, product__is_active=True):
                 amount += item.final_price
             if self.coupon_effect_price is not None:
                 amount -= self.coupon_effect_price
         else:
-            for item in self.items.filter(is_delete=False, product__is_delete=False, variant__is_delete=False,
-                                          variant__is_active=True, product__is_active=True):
+            for item in self.items.filter(variant__is_active=True, product__is_active=True):
                 amount += item.get_total_price
         return amount
 

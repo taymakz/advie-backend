@@ -75,9 +75,8 @@ class CurrentOrderSerializer(serializers.ModelSerializer):
             'shipping'
         )
 
-    def get_items(self, obj):
-        items = obj.items.filter(is_delete=False, product__is_delete=False, variant__is_delete=False,
-                                 variant__is_active=True, product__is_active=True)
+    def get_items(self, obj: Order):
+        items = obj.items.filter(variant__is_active=True, product__is_active=True)
         serializer = CurrentOrderItemSerializer(items, many=True)
         return serializer.data
 

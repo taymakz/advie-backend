@@ -99,7 +99,7 @@ class RequestPaymentCheckAPIView(APIView):
 
         # check if user Selected Shipping is Exist or Raise Error
         try:
-            selected_shipping = ShippingRate.objects.get(id=shipping_id, is_delete=False)
+            selected_shipping = ShippingRate.objects.get(id=shipping_id, is_active=True)
         except ShippingRate.DoesNotExist:
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.PAYMENT_NOT_VALID_SELECTED_SHIPPING.value)
@@ -118,8 +118,8 @@ class RequestPaymentCheckAPIView(APIView):
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.PAYMENT_NOT_VALID_SELECTED_SHIPPING.value)
         if current_order.address:
-            current_order.address.is_delete = True
-            current_order.address.save()
+            current_order.address.delete()
+
         order_address = OrderAddress.objects.create(
             receiver_name=selected_address.receiver_name,
             receiver_phone=selected_address.receiver_phone,
@@ -262,7 +262,8 @@ class VerifyPaymentAPIView(APIView):
         order_slug = request.GET.get('order')
 
         try:
-            current_order = Order.objects.get(slug=order_slug, payment_status=PaymentStatus.PENDING_PAYMENT.name)
+            current_order = Order.objects.get(slug=order_slug, payment_status=PaymentStatus.PENDING_PAYMENT.name,
+                                              is_delete=False)
 
         except Order.DoesNotExist:
             return BaseResponse(data={"redirect_to": f"{settings.FRONTEND_URL}/checkout/cart/"},
