@@ -81,12 +81,14 @@ class AddItemToCurrentOrderView(APIView):
                 product=product,
                 variant=variant,
             )
-            if variant.stock <= order_item.count:
+            if variant.stock < order_item.count:
                 return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                     message=ResponseMessage.ORDER_ITEM_DOES_NOT_EXIST_MORE_THAN.value.format(
                                         stock=variant.stock))
 
             order_item.count += count
+            if order_item.count > variant.stock:
+                order_item.count = variant.stock
             order_item.save()
 
             return BaseResponse(data=order_item.id, status=status.HTTP_200_OK,
