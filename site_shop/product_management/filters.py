@@ -1,5 +1,5 @@
 import django_filters
-from django.db.models import Q, Max, Min
+from django.db.models import Q, Max, Min, Sum
 from django.utils import timezone
 
 from site_account.user_management.models import UserSearchHistory
@@ -60,7 +60,10 @@ class ProductFilter(django_filters.FilterSet):
             if value == '1':
                 return queryset.order_by('-date_created')
             elif value == '2':
-                return queryset.order_by('-date_created')
+                return queryset.annotate(
+                    order_count=Sum(
+                        'baskets__count'
+                    )).order_by('-order_count', '-date_created')
             elif value == '3':
                 return queryset.annotate(highest_price=Max('variants__price')).order_by('-highest_price')
             elif value == '4':

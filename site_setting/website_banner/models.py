@@ -1,4 +1,5 @@
 import os
+from enum import Enum
 
 from PIL import Image
 from django.core.files.storage import default_storage
@@ -20,12 +21,16 @@ def upload_banner_path(instance, filename):
     return f"images/banner/{final_name}"
 
 
+class SiteBannerPosition(Enum):
+    HOME_PAGE_SLIDER_BANNER = 'اسلایدر صفحه اصلی 1350x450'
+    HOME_PAGE_LARGE_BANNER = 'بنر بزرگ صفحه اصلی 1350x170'
+
+
+SITE_BANNER_POSITION_CHOICES = [(position.name, position.value) for position in SiteBannerPosition]
+
+
 class SiteBanner(models.Model):
-    CHOICE_POSITION = (
-        ('SLIDER', 'SLIDER'),
-        ('BANNER', 'BANNER'),
-    )
-    position = models.CharField(choices=CHOICE_POSITION, max_length=6)
+    position = models.CharField(choices=SITE_BANNER_POSITION_CHOICES, max_length=40)
     title = models.CharField(max_length=100)
     image = ProcessedImageField(upload_to=upload_banner_path,
                                 format='WEBP',
