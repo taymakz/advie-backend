@@ -116,18 +116,26 @@ class RequestPaymentCheckAPIView(APIView):
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.PAYMENT_NOT_VALID_SELECTED_SHIPPING.value)
         if current_order.address:
-            current_order.address.delete()
+            # Update the existing address instead of deleting it
+            current_order.address.receiver_name = selected_address.receiver_name
+            current_order.address.receiver_phone = selected_address.receiver_phone
+            current_order.address.receiver_city = selected_address.receiver_city
+            current_order.address.receiver_province = selected_address.receiver_province
+            current_order.address.receiver_postal_code = selected_address.receiver_postal_code
+            current_order.address.receiver_address = selected_address.receiver_address
+            current_order.address.save()
+        else:
+            # Create a new address if the current_order doesn't have one
+            order_address = OrderAddress.objects.create(
+                receiver_name=selected_address.receiver_name,
+                receiver_phone=selected_address.receiver_phone,
+                receiver_city=selected_address.receiver_city,
+                receiver_province=selected_address.receiver_province,
+                receiver_postal_code=selected_address.receiver_postal_code,
+                receiver_address=selected_address.receiver_address,
+            )
+            current_order.address = order_address
 
-        order_address = OrderAddress.objects.create(
-            receiver_name=selected_address.receiver_name,
-            receiver_phone=selected_address.receiver_phone,
-            receiver_city=selected_address.receiver_city,
-            receiver_province=selected_address.receiver_province,
-            receiver_postal_code=selected_address.receiver_postal_code,
-            receiver_address=selected_address.receiver_address,
-        )
-        # Success
-        current_order.address = order_address
         current_order.shipping = selected_shipping
         current_order.save()
 
