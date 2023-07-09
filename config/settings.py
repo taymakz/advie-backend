@@ -1,11 +1,11 @@
 import os
-import sys
 from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-sys.stdout.reconfigure(encoding='utf-8')
+# import sys
+# sys.stdout.reconfigure(encoding='utf-8')
 
 # Load the environment variables from the .env file
 load_dotenv()
