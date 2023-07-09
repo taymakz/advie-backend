@@ -32,8 +32,6 @@ email = ''
 mobile = ''
 CallbackURL = settings.BACKEND_URL
 
-from django.db.models import Q
-
 
 class CheckoutResultAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -45,9 +43,8 @@ class CheckoutResultAPIView(APIView):
                 transaction_id=transaction_id,
                 slug=transaction_slug,
                 is_delete=False,
-                order__is_delete=False
-            ).filter(
-                Q(order__repayment_date_expire__lt=timezone.now()) | Q(order__repayment_date_expire__isnull=False)
+                order__is_delete=False,
+                date_created__gte=(timezone.now() - timezone.timedelta(hours=1)),
             ).select_related('order').first()
 
             if not transaction:
@@ -146,11 +143,15 @@ class RequestPaymentSubmitAPIView(APIView):
 
         try:
             current_order = Order.objects.get(user=user, payment_status=PaymentStatus.OPEN_ORDER.name,
-                                              is_delete=False)
+                                              is_delete=False, lock_for_payment=False)
+            current_order.lock_for_payment = True
+            current_order.save()
         except Order.DoesNotExist:
             return BaseResponse(data={"redirect_to": "/checkout/cart/"}, status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.FAILED.value)
         if current_order.items.count() == 0:
+            current_order.lock_for_payment = False
+            current_order.save()
             return BaseResponse(data={"redirect_to": "/checkout/cart/"}, status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.FAILED.value)
 
@@ -159,6 +160,8 @@ class RequestPaymentSubmitAPIView(APIView):
 
         # check if user order Address and Shipping Service Are Set Or Raise Error
         if current_order.shipping is None or current_order.address is None:
+            current_order.lock_for_payment = False
+            current_order.save()
             return BaseResponse(data={"redirect_to": "/checkout/shipping/"}, status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.FAILED.value)
 
@@ -166,6 +169,8 @@ class RequestPaymentSubmitAPIView(APIView):
         is_valid, message = current_order.is_valid_shipping_method(user_address=current_order.address,
                                                                    shipping=current_order.shipping)
         if not is_valid:
+            current_order.lock_for_payment = False
+            current_order.save()
             return BaseResponse(data={"redirect_to": "/checkout/cart/"}, status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.PAYMENT_NOT_VALID_SELECTED_SHIPPING.value)
 
@@ -177,6 +182,8 @@ class RequestPaymentSubmitAPIView(APIView):
             try:
                 used_coupon = Coupon.objects.get(code=coupon_code, is_delete=False)
             except Coupon.DoesNotExist:
+                current_order.lock_for_payment = False
+                current_order.save()
                 return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                     message=ResponseMessage.PAYMENT_NOT_VALID_USED_COUPON.value)
             valid, message = used_coupon.validate_coupon(user_id=user.id, order_total_price=order_total_price)
@@ -185,6 +192,8 @@ class RequestPaymentSubmitAPIView(APIView):
                     order_total_price)
                 order_total_price -= coupon_effect_dif_price
             else:
+                current_order.lock_for_payment = False
+                current_order.save()
                 return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                     message=ResponseMessage.PAYMENT_NOT_VALID_USED_COUPON.value)
         order_total_price += current_order.shipping.calculate_price(
@@ -211,6 +220,8 @@ class RequestPaymentSubmitAPIView(APIView):
                 order=current_order,
                 status=TransactionStatus.SUCCESS.name
             )
+            current_order.lock_for_payment = False
+            current_order.save()
             return BaseResponse(
                 data={'is_free': True,
                       'payment_gateway_link': f"{settings.FRONTEND_URL}/panel/orders/{current_order.slug}/"},
@@ -240,6 +251,9 @@ class RequestPaymentSubmitAPIView(APIView):
                     current_order.shipping_effect_price = current_order.shipping.calculate_price(
                         order_price=order_total_price_before_coupon)
                     current_order.payment_status = PaymentStatus.PENDING_PAYMENT.name
+                    current_order.set_repayment_expire_date()
+                    current_order.lock_for_payment = False
+
                     current_order.save()
                     return BaseResponse(
                         data={'is_free': False,
@@ -247,7 +261,11 @@ class RequestPaymentSubmitAPIView(APIView):
                         status=status.HTTP_200_OK,
                         message='در حال پردازش')
                 else:
+                    current_order.lock_for_payment = False
+                    current_order.save()
                     return BaseResponse(data={'status': False, 'code': str(response['Status'])})
+            current_order.lock_for_payment = False
+            current_order.save()
             return response
 
         except requests.exceptions.Timeout:
@@ -262,13 +280,11 @@ class VerifyPaymentAPIView(APIView):
         order_slug = request.GET.get('order')
 
         try:
-            current_order = Order.objects.get(slug=order_slug, payment_status=PaymentStatus.PENDING_PAYMENT.name,
-                                              is_delete=False)
+            current_order = Order.objects.get(slug=order_slug)
 
         except Order.DoesNotExist:
-            return BaseResponse(data={"redirect_to": f"{settings.FRONTEND_URL}/checkout/cart/"},
-                                status=status.HTTP_400_BAD_REQUEST,
-                                message=ResponseMessage.FAILED.value)
+            return redirect(f"{settings.FRONTEND_URL}/vf/tm?f={ResponseMessage.FAILED.value}")
+
         total_price = current_order.get_total_price
         user = current_order.user
         total_price -= current_order.coupon_effect_price
@@ -292,6 +308,7 @@ class VerifyPaymentAPIView(APIView):
                 current_order.ordered_date = datetime.date.today()
                 current_order.payment_status = PaymentStatus.PAID.name
                 current_order.delivery_status = DeliveryStatus.PENDING.name
+                current_order.repayment_date_expire = None
                 if current_order.coupon is not None:
                     valid, message = current_order.coupon.validate_coupon(user_id=user.id,
                                                                           order_total_price=total_price)
@@ -326,11 +343,11 @@ class VerifyPaymentAPIView(APIView):
                     -33: 'رقم تراكنش با رقم پرداخت شده مطابقت ندارد.',
                     -34: 'سقف تقسيم تراكنش از لحاظ تعداد يا رقم عبور نموده است.',
                     -40: 'اجازه دسترسي به متد مربوطه وجود ندارد.',
-                    -41: 'اطلاعات ارسال شده مربوط به AdditionalData غيرمعتبر ميباشد.',
+                    -41: 'اطلاعات ارسال شده غيرمعتبر ميباشد.',
                     -42: 'مدت زمان معتبر طول عمر شناسه پرداخت بايد بين 30 دقيه تا 45 روز مي باشد.',
                     -54: 'درخواست مورد نظر آرشيو شده است.',
                     100: 'عمليات با موفقيت انجام گرديده است.',
-                    101: 'عمليات پرداخت موفق بوده و قبلا PaymentVerification تراكنش انجام شده است.'
+                    101: 'تراكنش قبلا انجام شده است.'
                 }
 
                 error_code = response['Status']

@@ -26,6 +26,7 @@ class Transaction(models.Model):
 
     ref_id = models.CharField(max_length=255, blank=True, null=True)
     reason = models.TextField(blank=True, null=True)
+
     date_created = models.DateTimeField(auto_now_add=True, editable=False)
     date_updated = models.DateTimeField(auto_now=True, editable=False)
     is_delete = models.BooleanField(default=False)

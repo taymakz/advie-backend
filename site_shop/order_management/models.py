@@ -52,6 +52,7 @@ class Order(models.Model):
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, blank=True, null=True)
     delivery_status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, blank=True, null=True)
     repayment_date_expire = models.DateTimeField(blank=True, null=True)
+    lock_for_payment = models.BooleanField(default=False)
 
     # -------------- End
 
@@ -99,11 +100,13 @@ class Order(models.Model):
 
         if not self.slug:
             self.slug = self.generate_unique_slug()
-        if not self.repayment_date_expire and self.payment_status == PaymentStatus.PENDING_PAYMENT.name:
-            self.repayment_date_expire = timezone.now() + timedelta(hours=1)
 
         self._previous_status = self.delivery_status
         super().save(*args, **kwargs)
+
+    def set_repayment_expire_date(self):
+        self.repayment_date_expire = timezone.now() + timedelta(hours=1)
+        self.save()
 
     @staticmethod
     def generate_unique_slug():
@@ -145,7 +148,7 @@ class Order(models.Model):
 
     @property
     def is_paid(self):
-        return self.payment_status == PaymentStatus.PAID.value
+        return self.payment_status == PaymentStatus.PAID.name
 
     @property
     def get_total_price(self):

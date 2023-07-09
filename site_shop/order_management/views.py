@@ -56,7 +56,11 @@ class GetUserCurrentOrderView(APIView):
 
             return BaseResponse(data=serializer.data, status=status.HTTP_200_OK,
                                 message=ResponseMessage.SUCCESS.value)
-        except:
+        except Order.DoesNotExist:
+
+            return BaseResponse(status=status.HTTP_404_NOT_FOUND,
+                                message=ResponseMessage.FAILED.value)
+        except Exception as e:
 
             return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
                                 message=ResponseMessage.FAILED.value)
