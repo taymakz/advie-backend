@@ -268,15 +268,18 @@ class RequestPaymentSubmitAPIView(APIView):
                 else:
                     current_order.lock_for_payment = False
                     current_order.save()
-                    return BaseResponse(data={'status': False, 'code': str(response['Status'])})
+                    return BaseResponse(data={'code': str(response['Status'])},
+                                        status=status.HTTP_400_BAD_REQUEST, message=ResponseMessage.FAILED.value)
             current_order.lock_for_payment = False
             current_order.save()
             return response
 
         except requests.exceptions.Timeout:
-            return BaseResponse(data={'status': False, 'code': 'خطای اتصال'})
+            return BaseResponse(data={'code': 'خطای اتصال'}, status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
         except requests.exceptions.ConnectionError:
-            return BaseResponse(data={'status': False, 'code': 'خطای اتصال'})
+            return BaseResponse(data={'code': 'خطای اتصال'}, status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
 
 
 # Request RePayment for Pending Order
@@ -364,15 +367,19 @@ class RequestRePaymentSubmitAPIView(APIView):
                 else:
                     pending_order.lock_for_payment = False
                     pending_order.save()
-                    return BaseResponse(data={'status': False, 'code': str(response['Status'])})
+                    return BaseResponse(data={'code': str(response['Status'])},
+                                        status=status.HTTP_400_BAD_REQUEST,
+                                        message=ResponseMessage.FAILED.value)
             pending_order.lock_for_payment = False
             pending_order.save()
             return response
 
         except requests.exceptions.Timeout:
-            return BaseResponse(data={'status': False, 'code': 'خطای اتصال'})
+            return BaseResponse(data={'code': 'خطای اتصال'}, status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
         except requests.exceptions.ConnectionError:
-            return BaseResponse(data={'status': False, 'code': 'خطای اتصال'})
+            return BaseResponse(data={'code': 'خطای اتصال'}, status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
 
 
 # Validate The Payment
