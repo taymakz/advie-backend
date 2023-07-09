@@ -45,7 +45,7 @@ PAYMENT_STATUS_CHOICES = [(status.name, status.value) for status in PaymentStatu
 
 
 class Order(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='orders')
 
     slug = models.SlugField(max_length=6, unique=True, blank=True, null=True)  # شماره سفارش
     # Status Fields -------------- Start
@@ -56,9 +56,10 @@ class Order(models.Model):
 
     # -------------- End
 
-    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name='orders', blank=True, null=True)
-    shipping = models.ForeignKey(ShippingRate, on_delete=models.CASCADE, related_name='orders', blank=True, null=True)
-    address = models.ForeignKey(OrderAddress, on_delete=models.CASCADE, related_name='orders', blank=True, null=True)
+    coupon = models.ForeignKey(Coupon, on_delete=models.DO_NOTHING, related_name='orders', blank=True, null=True)
+    shipping = models.ForeignKey(ShippingRate, on_delete=models.DO_NOTHING, related_name='orders', blank=True,
+                                 null=True)
+    address = models.ForeignKey(OrderAddress, on_delete=models.DO_NOTHING, related_name='orders', blank=True, null=True)
 
     # Fields that Fill After Payment -------------- Start
 
@@ -127,7 +128,8 @@ class Order(models.Model):
     @staticmethod
     def is_valid_shipping_method(user_address: UserAddresses, shipping: ShippingRate):
         # Get the ShippingPrice object with the given ID
-        if not user_address or not shipping: return False, 'آدرس و یا شیوه ارسال نا معتبر'
+        if not user_address or not shipping:
+            return False, 'آدرس و یا شیوه ارسال نا معتبر'
         if shipping.all_area:
             # Filter all ShippingPrice objects that are active and not equal to 'همه'
             other_shipping_areas = ShippingRate.objects.filter(all_area=True, is_active=True)
@@ -191,7 +193,7 @@ class OrderItem(models.Model):
     final_discount = models.IntegerField(null=True, blank=True, editable=False)
     final_profit = models.IntegerField(null=True, blank=True, editable=False)
 
-    refund = models.ForeignKey(RefundOrderItem, on_delete=models.CASCADE, related_name='order_item', blank=True,
+    refund = models.ForeignKey(RefundOrderItem, on_delete=models.DO_NOTHING, related_name='order_item', blank=True,
                                null=True)
 
     def __str__(self):
