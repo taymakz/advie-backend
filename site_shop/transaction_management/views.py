@@ -70,6 +70,7 @@ class CheckoutResultAPIView(APIView):
             return BaseResponse(status=status.HTTP_404_NOT_FOUND)
 
 
+# View Check and Validate Order Status For Next step
 class RequestPaymentCheckAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -134,6 +135,7 @@ class RequestPaymentCheckAPIView(APIView):
                             message=ResponseMessage.SUCCESS.value)
 
 
+# Request Current Open Order To Pay
 class RequestPaymentSubmitAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -226,7 +228,8 @@ class RequestPaymentSubmitAPIView(APIView):
                 data={'is_free': True,
                       'payment_gateway_link': f"{settings.FRONTEND_URL}/panel/orders/{current_order.slug}/"},
                 status=status.HTTP_200_OK,
-                message='در حال پردازش')
+                message='در حال نهایی سازی سفارش'
+            )
 
         if order_total_price < 1000:
             order_total_price = 1000
@@ -259,7 +262,9 @@ class RequestPaymentSubmitAPIView(APIView):
                         data={'is_free': False,
                               'payment_gateway_link': ZP_API_STARTPAY + str(response['Authority'])},
                         status=status.HTTP_200_OK,
-                        message='در حال پردازش')
+                        message='در حال انتقال به درگاه پرداخت'
+
+                    )
                 else:
                     current_order.lock_for_payment = False
                     current_order.save()
@@ -274,6 +279,103 @@ class RequestPaymentSubmitAPIView(APIView):
             return BaseResponse(data={'status': False, 'code': 'خطای اتصال'})
 
 
+# Request RePayment for Pending Order
+class RequestRePaymentSubmitAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, format=None):
+        order_slug = request.data.get('order_slug', None)
+        user = request.user
+
+        try:
+            pending_order = Order.objects.get(slug=order_slug,
+                                              user=user,
+                                              payment_status=PaymentStatus.PENDING_PAYMENT.name,
+                                              is_delete=False,
+                                              lock_for_payment=False,
+                                              repayment_date_expire__gte=(timezone.now() - timezone.timedelta(hours=1)),
+
+                                              )
+            pending_order.lock_for_payment = True
+            pending_order.save()
+        except Order.DoesNotExist:
+            return BaseResponse(data={"redirect_to": "/"}, status=status.HTTP_404_NOT_FOUND,
+                                message=ResponseMessage.FAILED.value)
+        if pending_order.items.count() == 0:
+            pending_order.lock_for_payment = False
+            pending_order.save()
+            return BaseResponse(data={"redirect_to": "/"}, status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
+
+        order_total_price = pending_order.get_total_price
+
+        # check if user order Address and Shipping Service Are Set Or Raise Error
+        if pending_order.shipping is None or pending_order.address is None:
+            pending_order.lock_for_payment = False
+            pending_order.save()
+            return BaseResponse(data={"redirect_to": "/"}, status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.FAILED.value)
+
+        # Validate Address and Shipping Service
+        is_valid, message = pending_order.is_valid_shipping_method(user_address=pending_order.address,
+                                                                   shipping=pending_order.shipping)
+        if not is_valid:
+            pending_order.lock_for_payment = False
+            pending_order.save()
+            return BaseResponse(data={"redirect_to": "/checkout/cart/"}, status=status.HTTP_400_BAD_REQUEST,
+                                message=ResponseMessage.PAYMENT_NOT_VALID_SELECTED_SHIPPING.value)
+
+        order_total_price_before_coupon = order_total_price
+
+        coupon_effect_dif_price = 0
+
+        order_total_price -= coupon_effect_dif_price
+
+        order_total_price += pending_order.shipping.calculate_price(
+            order_price=order_total_price_before_coupon)
+
+        if order_total_price < 1000:
+            order_total_price = 1000
+
+        data = {
+            "MerchantID": settings.ZARINPAL_MERCHANT,
+            "Amount": order_total_price,
+            "Description": description,
+            "Phone": user.phone,
+            "CallbackURL": f"{CallbackURL}/api/payment/verify?order={pending_order.slug}",
+        }
+        data = json.dumps(data)
+        # set content length by data
+        headers = {'content-type': 'application/json', 'content-length': str(len(data))}
+        try:
+            response = requests.post(ZP_API_REQUEST, data=data, headers=headers, timeout=10)
+
+            if response.status_code == 200:
+                response = response.json()
+                if response['Status'] == 100:
+                    pending_order.lock_for_payment = False
+                    pending_order.save()
+                    return BaseResponse(
+                        data={'is_free': False,
+                              'payment_gateway_link': ZP_API_STARTPAY + str(response['Authority'])},
+                        status=status.HTTP_200_OK,
+                        message='در حال انتقال به درگاه پرداخت'
+                    )
+                else:
+                    pending_order.lock_for_payment = False
+                    pending_order.save()
+                    return BaseResponse(data={'status': False, 'code': str(response['Status'])})
+            pending_order.lock_for_payment = False
+            pending_order.save()
+            return response
+
+        except requests.exceptions.Timeout:
+            return BaseResponse(data={'status': False, 'code': 'خطای اتصال'})
+        except requests.exceptions.ConnectionError:
+            return BaseResponse(data={'status': False, 'code': 'خطای اتصال'})
+
+
+# Validate The Payment
 class VerifyPaymentAPIView(APIView):
 
     def get(self, request):
