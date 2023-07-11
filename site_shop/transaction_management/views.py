@@ -1,5 +1,5 @@
-import datetime
 import json
+from datetime import timedelta, datetime
 
 import requests
 from django.conf import settings
@@ -16,6 +16,7 @@ from site_shop.coupon_management.models import Coupon
 from site_shop.order_management.models import Order, PaymentStatus, OrderAddress, DeliveryStatus
 from site_shop.shipping_management.models import ShippingRate
 from site_shop.transaction_management.models import Transaction, TransactionStatus
+from site_utils.persian.date import model_date_field_convertor
 
 if settings.ZARINPAL_SANDBOX:
     sandbox = 'sandbox'
@@ -44,15 +45,14 @@ class CheckoutResultAPIView(APIView):
                 slug=transaction_slug,
                 is_delete=False,
                 order__is_delete=False,
-                date_created__gte=(timezone.now() - timezone.timedelta(hours=1)),
+                date_created__gte=(timezone.now() - timedelta(hours=1)),
             ).select_related('order').first()
 
             if not transaction:
                 return BaseResponse(status=status.HTTP_404_NOT_FOUND)
 
             order = transaction.order
-            formatted_repayment_expire_date = order.repayment_date_expire.strftime(
-                "%a %b %d %Y %H:%M:%S GMT%z (%Z)") if order and order.repayment_date_expire else None
+            formatted_repayment_expire_date = model_date_field_convertor(order.repayment_date_expire)
 
             # Prepare the CheckoutResultDTO
             result = {
@@ -422,8 +422,9 @@ class VerifyPaymentAPIView(APIView):
             response = response.json()
 
             if response['Status'] == 100:
-                current_order.ordered_date = datetime.date.today()
                 current_order.payment_status = PaymentStatus.PAID.name
+                current_order.save()
+                current_order.ordered_date = datetime.date.today()
                 current_order.delivery_status = DeliveryStatus.PENDING.name
                 current_order.repayment_date_expire = None
                 if current_order.coupon is not None:
@@ -441,9 +442,11 @@ class VerifyPaymentAPIView(APIView):
                     item.set_final_price()
                     item.save()
                 current_order.save()
+
                 transaction = Transaction.objects.create(user=user, order=current_order,
                                                          status=TransactionStatus.SUCCESS.name,
                                                          ref_id=response['RefID'])
+
                 return redirect(
                     f"{settings.FRONTEND_URL}/checkout/result/{transaction.transaction_id}/{transaction.slug}/")
 
@@ -462,6 +465,7 @@ class VerifyPaymentAPIView(APIView):
                     -40: 'اجازه دسترسي به متد مربوطه وجود ندارد.',
                     -41: 'اطلاعات ارسال شده غيرمعتبر ميباشد.',
                     -42: 'مدت زمان معتبر طول عمر شناسه پرداخت بايد بين 30 دقيه تا 45 روز مي باشد.',
+                    -51: 'لغو توسط کاربر',
                     -54: 'درخواست مورد نظر آرشيو شده است.',
                     100: 'عمليات با موفقيت انجام گرديده است.',
                     101: 'تراكنش قبلا انجام شده است.'
@@ -473,6 +477,7 @@ class VerifyPaymentAPIView(APIView):
                 transaction = Transaction.objects.create(user=user, order=current_order,
                                                          status=TransactionStatus.FAILED.name,
                                                          reason=reason)
+
                 return redirect(
                     f"{settings.FRONTEND_URL}/checkout/result/{transaction.transaction_id}/{transaction.slug}/")
 

@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -9,7 +10,7 @@ from site_api.api_configuration.enums import ResponseMessage
 from site_api.api_configuration.response import BaseResponse
 from site_shop.order_management.models import Order, OrderItem, PaymentStatus
 from site_shop.order_management.serializers import UserPaidOrderListSerializer, OrderDetailSerializer, \
-    CurrentOrderSerializer
+    CurrentOpenOrderSerializer, CurrentPendingOrderSerializer
 from site_shop.product_management.models import Product, ProductVariant
 from site_shop.transaction_management.models import Transaction, TransactionStatus
 
@@ -36,25 +37,35 @@ class GetUserCurrentOrderView(APIView):
         try:
             with transaction.atomic():
                 # acquire a lock on the order record
-                order = Order.objects.select_for_update().filter(user=request.user,
-                                                                 payment_status=PaymentStatus.OPEN_ORDER.name,
-                                                                 is_delete=False).first()
-
-                if not order:
+                open_order = Order.objects.select_for_update().filter(user=request.user,
+                                                                      payment_status=PaymentStatus.OPEN_ORDER.name,
+                                                                      is_delete=False).first()
+                pending_orders = Order.objects.filter(
+                    user=request.user,
+                    payment_status=PaymentStatus.PENDING_PAYMENT.name,
+                    is_delete=False,
+                    repayment_date_expire__isnull=False,
+                    repayment_date_expire__gte=timezone.now(),
+                )
+                if not open_order:
                     # create a new order if one doesn't exist
-                    order = Order.objects.create(user=request.user, payment_status=PaymentStatus.OPEN_ORDER.name)
+                    open_order = Order.objects.create(user=request.user, payment_status=PaymentStatus.OPEN_ORDER.name)
                 # check if user order Address and Shipping Service Are Set Or Raise Error
-                if order.shipping:
-                    is_valid, message = order.is_valid_shipping_method(user_address=order.address,
-                                                                       shipping=order.shipping)
+                if open_order.shipping:
+                    is_valid, message = open_order.is_valid_shipping_method(user_address=open_order.address,
+                                                                            shipping=open_order.shipping)
                     if not is_valid:
-                        order.shipping = None
-                        order.address = None
-                        order.save()
+                        open_order.shipping = None
+                        open_order.address = None
+                        open_order.save()
+                open_order_serializer = CurrentOpenOrderSerializer(open_order)
+                pending_orders_serializer = CurrentPendingOrderSerializer(pending_orders, many=True)
+                data = {
+                    'open': open_order_serializer.data,
+                    'pending': pending_orders_serializer.data
+                }
 
-                serializer = CurrentOrderSerializer(order)
-
-            return BaseResponse(data=serializer.data, status=status.HTTP_200_OK,
+            return BaseResponse(data=data, status=status.HTTP_200_OK,
                                 message=ResponseMessage.SUCCESS.value)
         except Order.DoesNotExist:
 

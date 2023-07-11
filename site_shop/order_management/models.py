@@ -153,6 +153,11 @@ class Order(models.Model):
         return self.payment_status == PaymentStatus.PAID.name
 
     @property
+    def get_payment_price(self):
+
+        return (self.get_total_price - self.coupon_effect_price) - self.shipping_effect_price
+
+    @property
     def get_total_price(self):
         amount = 0
         if self.is_paid:
