@@ -358,9 +358,11 @@ class ProductVisit(models.Model):
         verbose_name_plural = 'product visits'
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
         cache_key = f'product_visit_count_{self.product.pk}'
+        if cache.get(cache_key) is None:
+            cache.set(cache_key, 0)
         cache.incr(cache_key)
+        super().save(*args, **kwargs)
 
 
 class Property(models.Model):
@@ -400,6 +402,9 @@ class UserFavoriteProducts(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorite_products')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     is_delete = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.username} {self.product.title_ir} : is delete : {self.is_delete}"
 
 
 class UserRecentVisitedProduct(models.Model):

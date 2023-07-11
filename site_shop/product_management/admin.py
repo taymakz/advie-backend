@@ -66,3 +66,5 @@ admin.site.register(models.VariantType)
 admin.site.register(models.VariantValue)
 admin.site.register(models.VariantPrefix)
 admin.site.register(models.Property)
+
+admin.site.register(models.UserFavoriteProducts)

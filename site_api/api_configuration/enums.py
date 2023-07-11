@@ -37,6 +37,9 @@ class ResponseMessage(Enum):
     ORDER_ITEM_COUNT_INCREASED = "به تعداد محصول در سبد خرید اضافه شد"
     ORDER_ITEM_COUNT_DECREASED = "از تعداد محصول در سبد خرید کم شد"
     ORDER_ITEM_REMOVED = "محصول از سبد خرید حذف شد"
+    # Favorite
+    PRODUCT_ADDED_TO_FAVORITE_SUCCESSFULLY = "محصول با موفقیت به علاقه مندی‌ها اضافه شد"
+    PRODUCT_REMOVED_FROM_FAVORITE_SUCCESSFULLY = "محصول با موفقیت از علاقه مندی‌ها حذف شد"
 
     # User Panel Address
     USER_PANEL_ADDRESS_ADDED_SUCCESSFULLY = "آدرس جدید با موفقیت ثبت شد"

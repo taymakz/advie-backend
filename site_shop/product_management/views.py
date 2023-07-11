@@ -2,12 +2,15 @@ from django.db.models import Prefetch
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 
 from site_api.api_configuration.enums import ResponseMessage
 from site_api.api_configuration.response import BaseResponse, PaginationApiResponse
 from site_shop.product_management.filters import ProductFilter
-from site_shop.product_management.models import Product, ProductVariant
+from site_shop.product_management.models import Product, ProductVariant, UserFavoriteProducts, ProductVisit, \
+    UserRecentVisitedProduct
 from site_shop.product_management.serializers import ProductDetailSerializer, ProductCardSerializer
+from site_utils.http_services.get_client_ip import get_client_ip
 
 
 class ProductSearchView(ListAPIView):
@@ -31,12 +34,89 @@ class ProductDetailAPIView(RetrieveAPIView):
     lookup_url_kwarg = 'sku'
 
     def get(self, request, *args, **kwargs):
+        # try:
+        product = self.get_object()
+        serializer = self.get_serializer(product)
+        # Add Product to User Recent Visits
+        if self.request.user.is_authenticated:
+            new_visit_product_exist = UserRecentVisitedProduct.objects.filter(product_id=product.id,
+                                                                              user_id=self.request.user.id,
+                                                                              is_delete=False).exists()
+            if not new_visit_product_exist:
+                visited_products_count = UserRecentVisitedProduct.objects.filter(
+                    user_id=self.request.user.id).count()
+                if visited_products_count > 10:
+                    latest_user_visit = UserRecentVisitedProduct.objects.filter(user_id=self.request.user.id,
+
+                                                                                is_delete=False).order_by(
+                        'pk').first()
+                    if latest_user_visit:
+                        latest_user_visit.is_delete = True
+                        latest_user_visit.save()
+                UserRecentVisitedProduct.objects.create(product_id=product.id, user_id=self.request.user.id)
+
+        # Add Product Visit
+        user_ip = get_client_ip(self.request)
+        user_id = self.request.user.id if self.request.user.is_authenticated else None
+
+        ProductVisit.objects.get_or_create(
+            ip=user_ip,
+            user_id=user_id,
+            product_id=product.id
+        )
+        # ---------
+        response_data = serializer.data
+        return BaseResponse(data=response_data, status=status.HTTP_200_OK,
+                            message=ResponseMessage.SUCCESS.value)
+    # except:
+    #     return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
+    #                         message=ResponseMessage.FAILED.value)
+
+
+class UserFavoriteProductsView(APIView):
+
+    def get(self, request):
+        user = request.user
+        favorites = UserFavoriteProducts.objects.filter(user=user, is_delete=False).order_by('-id')
+        serializer = ProductCardSerializer([f.product for f in favorites], many=True)
+        return BaseResponse(data=serializer.data, status=status.HTTP_200_OK,
+                            message=ResponseMessage.SUCCESS.value, )
+
+    def post(self, request):
+
+        user = request.user
+        product_id = request.data.get('product_id')
+        favorites_count = UserFavoriteProducts.objects.filter(user=user, is_delete=False).count()
+
+        # check if the product is already in the favorites, remove it
+        existing_favorite = UserFavoriteProducts.objects.filter(user=user, product__id=product_id,
+                                                                is_delete=False).first()
+        if existing_favorite:
+            existing_favorite.is_delete = True
+            existing_favorite.save()
+            return BaseResponse(status=status.HTTP_201_CREATED,
+                                message=ResponseMessage.PRODUCT_REMOVED_FROM_FAVORITE_SUCCESSFULLY.value)
+
+        # check if user already have 20 favorites, remove the oldest one
+        if favorites_count >= 20:
+            oldest_favorite = UserFavoriteProducts.objects.filter(user=user).order_by('created_at').first()
+            oldest_favorite.is_delete = True
+            oldest_favorite.save()
+        UserFavoriteProducts.objects.create(user=user, product_id=product_id, is_delete=False)
+
+        return BaseResponse(status=status.HTTP_201_CREATED,
+                            message=ResponseMessage.PRODUCT_ADDED_TO_FAVORITE_SUCCESSFULLY.value)
+
+    def delete(self, request):
+        user = request.user
+        product_id = request.data.get('product_id')
         try:
-            product = self.get_object()
-            serializer = self.get_serializer(product)
-            response_data = serializer.data
-            return BaseResponse(data=response_data, status=status.HTTP_200_OK,
-                                message=ResponseMessage.SUCCESS.value)
-        except:
-            return BaseResponse(status=status.HTTP_400_BAD_REQUEST,
-                                message=ResponseMessage.FAILED.value)
+            favorite = UserFavoriteProducts.objects.filter(user=user, product__id=product_id).first()
+
+            favorite.delete()
+            return BaseResponse(status=status.HTTP_204_NO_CONTENT,
+                                message=ResponseMessage.PRODUCT_REMOVED_FROM_FAVORITE_SUCCESSFULLY.value)
+        except UserFavoriteProducts.DoesNotExist:
+            return BaseResponse(status=status.HTTP_404_NOT_FOUND,
+                                message=ResponseMessage.FAILED.value
+                                )

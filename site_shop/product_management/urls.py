@@ -6,4 +6,6 @@ urlpatterns = [
     path('products/', views.ProductSearchView.as_view(), name='product-search'),
 
     path('product/<int:sku>/', views.ProductDetailAPIView.as_view(), name='product_detail'),
+
+    path('product/user/favorite/', views.UserFavoriteProductsView.as_view(), name='product_favorite'),
 ]
