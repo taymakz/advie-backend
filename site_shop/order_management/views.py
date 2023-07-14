@@ -12,7 +12,6 @@ from site_shop.order_management.models import Order, OrderItem, PaymentStatus
 from site_shop.order_management.serializers import \
     CurrentOpenOrderSerializer, CurrentPendingOrderSerializer, UserPaidOrderSerializer
 from site_shop.product_management.models import Product, ProductVariant
-from site_shop.transaction_management.models import Transaction, TransactionStatus
 
 
 class ValidateUserCurrentLocalOrderView(APIView):
@@ -189,21 +188,20 @@ class UserPaidOrderListAPIView(ListAPIView):
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user, is_delete=False,
-                                    payment_status=PaymentStatus.PAID.name).order_by('date_ordered')
+                                    payment_status=PaymentStatus.PAID.name).order_by('-date_ordered')
 
 
 # Get User Paid Order Detail For Profile Section
 
 class UserPaidOrderDetailAPIView(RetrieveAPIView):
     serializer_class = UserPaidOrderSerializer
-    lookup_field = 'transaction'
+    lookup_field = 'slug'
 
     def get_object(self):
-        transaction_id = self.kwargs.get('id')
-        requested_transaction = Transaction.objects.filter(transaction_id=transaction_id,
-                                                           user=self.request.user,
-                                                           status=TransactionStatus.SUCCESS.name).first()
-        return requested_transaction.order
+        order_slug = self.kwargs.get('slug')
+        return Order.objects.exclude(
+            payment_status=PaymentStatus.OPEN_ORDER.name).filter(slug=order_slug,
+                                                                 user=self.request.user).first()
 
     def get(self, request, *args, **kwargs):
         order = self.get_object()

@@ -216,6 +216,7 @@ class RequestPaymentSubmitAPIView(APIView):
             current_order.shipping_effect_price = current_order.shipping.calculate_price(
                 order_price=order_total_price_before_coupon)
             current_order.date_ordered = timezone.now()
+            current_order.date_delivery_status_updated = timezone.now()
 
             current_order.save()
 
@@ -425,6 +426,7 @@ class VerifyPaymentAPIView(APIView):
                 current_order.payment_status = PaymentStatus.PAID.name
                 current_order.save()
                 current_order.date_ordered = timezone.now()
+                current_order.date_delivery_status_updated = timezone.now()
 
                 current_order.delivery_status = DeliveryStatus.PENDING.name
                 current_order.repayment_date_expire = None

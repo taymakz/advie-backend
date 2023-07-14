@@ -26,19 +26,18 @@ class PaginationApiResponse(PageNumberPagination):
         current_page = self.page.number
         page_count = self.page.paginator.num_pages
         pagination = {
-            'entityCount': self.page.paginator.count,
-            'currentPage': self.page.number,
-            'pageCount': self.page.paginator.num_pages,
-            'startPage': max(current_page - 2, 1),
-            'endPage': min(current_page + 2, page_count),
+            'entity_count': self.page.paginator.count,
+            'current_page': self.page.number,
+            'page_count': self.page.paginator.num_pages,
+            'start_page': max(current_page - 2, 1),
+            'end_page': min(current_page + 2, page_count),
             'take': self.page.paginator.per_page,
             'has_next': self.page.has_next(),
             'has_previous': self.page.has_previous(),
             'data': data
         }
-        response = BaseResponse(data=pagination, status=status.HTTP_200_OK,
-                                message=ResponseMessage.SUCCESS.value)
-        return response
+        return BaseResponse(data=pagination, status=status.HTTP_200_OK,
+                            message=ResponseMessage.SUCCESS.value)
 
     def __call__(self, request, queryset):
         paginator = super().__call__(request, queryset)

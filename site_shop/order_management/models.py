@@ -68,6 +68,7 @@ class Order(models.Model):
     coupon_effect_price = models.PositiveIntegerField(default=0)  # تاثیر کد تخفیف بعد خرید
     shipping_effect_price = models.IntegerField(default=0)  # هزینه ارسال بعد خرید
 
+    date_delivery_status_updated = models.DateTimeField(blank=True, null=True)
     date_ordered = models.DateTimeField(blank=True, null=True)  # تاریخ خرید
     date_shipped = models.DateTimeField(blank=True, null=True)
     date_delivered = models.DateTimeField(blank=True, null=True)
@@ -91,10 +92,16 @@ class Order(models.Model):
                 print('Send SMS In ORDER')
             if self.delivery_status == DeliveryStatus.PROCESSING.value:
                 print('Send SMS In ORDER')
+
             elif self.delivery_status == DeliveryStatus.SHIPPED.value:
-                import datetime
-                self.shipped_date = datetime.date.today()
+                self.date_shipped = timezone.now()
                 print('Send SMS In ORDER')
+
+            elif self.delivery_status == DeliveryStatus.DELIVERED.value:
+                self.date_delivered = timezone.now()
+                print('Send SMS In ORDER')
+
+            self.date_delivery_status_updated = timezone.now()
             self._previous_delivery_status = self.delivery_status
 
     def save(self, *args, **kwargs):
@@ -102,7 +109,6 @@ class Order(models.Model):
         if not self.slug:
             self.slug = self.generate_unique_slug()
 
-        self._previous_status = self.delivery_status
         super().save(*args, **kwargs)
 
     def set_repayment_expire_date(self):

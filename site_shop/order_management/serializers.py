@@ -186,6 +186,7 @@ class UserPaidOrderSerializer(serializers.ModelSerializer):
             'delivery_status',
             'payment_status',
 
+            'date_delivery_status_updated',
             'date_ordered',
             'date_shipped',
             'date_delivered',
@@ -225,4 +226,5 @@ class UserPaidOrderSerializer(serializers.ModelSerializer):
     def get_transaction_id(self, obj):
         transaction = Transaction.objects.filter(order_id=obj.id, is_delete=False,
                                                  status=TransactionStatus.SUCCESS.name).first()
-        return transaction.transaction_id
+
+        return transaction.transaction_id if transaction else None

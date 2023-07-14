@@ -5,7 +5,7 @@ from . import views
 urlpatterns = [
 
     path('order/list/', views.UserPaidOrderListAPIView.as_view(), name='get_user_paid_order_list'),
-    path('order/<int:id>/', views.UserPaidOrderDetailAPIView.as_view(), name='get_user_paid_order_detail'),
+    path('order/detail/<slug:slug>/', views.UserPaidOrderDetailAPIView.as_view(), name='get_user_paid_order_detail'),
 
     path('order/current/', views.GetUserCurrentOrderView.as_view(), name='get_user_current_order'),
     path('order/current/validate/', views.ValidateUserCurrentLocalOrderView.as_view(),
