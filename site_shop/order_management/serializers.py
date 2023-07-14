@@ -3,7 +3,7 @@ from rest_framework import serializers
 from site_shop.order_management.models import OrderAddress, OrderItem, Order
 from site_shop.product_management.serializers import VariantTypeSerializer, ProductVariantSerializer
 from site_shop.shipping_management.serializers import ShippingRateSerializer
-from site_shop.transaction_management.models import Transaction
+from site_shop.transaction_management.models import Transaction, TransactionStatus
 from site_utils.persian.date import model_date_field_convertor
 
 
@@ -85,6 +85,7 @@ class CurrentOpenOrderSerializer(serializers.ModelSerializer):
 class CurrentPendingOrderSerializer(serializers.ModelSerializer):
     price = serializers.SerializerMethodField()
     repayment_date_expire = serializers.SerializerMethodField()
+    items = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -92,8 +93,14 @@ class CurrentPendingOrderSerializer(serializers.ModelSerializer):
             'id',
             'slug',
             'price',
-            'repayment_date_expire'
+            'repayment_date_expire',
+            'items',
         )
+
+    def get_items(self, obj: Order):
+        items = obj.items.filter(variant__is_active=True, product__is_active=True)
+        serializer = CurrentOrderItemSerializer(items, many=True)
+        return serializer.data
 
     def get_price(self, obj: Order):
         return obj.get_payment_price
@@ -108,66 +115,6 @@ class CurrentOrderSerializer(serializers.Serializer):
 
 
 # Order , Item Serializer ( Paid )
-class UserPaidOrderListSerializer(serializers.ModelSerializer):
-    total_price = serializers.SerializerMethodField()
-    total_profit = serializers.SerializerMethodField()
-    total_price_before_discount = serializers.SerializerMethodField()
-    shipping_price = serializers.SerializerMethodField()
-
-    transaction_id = serializers.SerializerMethodField()
-
-    shipping_service = serializers.SerializerMethodField()
-    address = OrderAddressSerializer()
-
-    class Meta:
-        model = Order
-        fields = (
-            'id',
-            'status',
-
-            'transaction_id',
-            'tracking_code',
-
-            'date_ordered',
-            'date_shipped',
-            'date_delivered',
-
-            'total_price',
-            'total_profit',
-            'total_price_before_discount',
-            'shipping_price',
-
-            'shipping_service',
-            'address',
-        )
-
-    def get_total_price(self, obj):
-        return obj.get_total_price
-
-    def get_total_profit(self, obj):
-        return obj.get_total_profit
-
-    def get_total_price_before_discount(self, obj):
-        return obj.get_total_price_before_discount
-
-    def get_shipping_price(self, obj):
-        if obj.shipping_effect_price:
-            return obj.shipping_effect_price
-        else:
-            return 0
-
-    def get_shipping_service(self, obj):
-        return {
-            "image": obj.shipping.shipping_service.image.name,
-            "name": obj.shipping.shipping_service.name
-        }
-
-    def get_transaction_id(self, obj):
-        transaction = Transaction.objects.get_success().filter(order_id=obj.id).first()
-
-        return transaction.transaction_id
-
-
 class UserPaidOrderItemSerializer(serializers.ModelSerializer):
     product_id = serializers.SerializerMethodField()
     product_url = serializers.SerializerMethodField()
@@ -212,16 +159,16 @@ class UserPaidOrderItemSerializer(serializers.ModelSerializer):
     def get_product_image(self, obj):
         return obj.product.image.name
 
-    def get_refund_status(self, obj):
-        return obj.refund.status
+    def get_refund_status(self, obj: OrderItem):
+        return obj.refund.status if obj.refund else None
 
 
-class OrderDetailSerializer(serializers.ModelSerializer):
+class UserPaidOrderSerializer(serializers.ModelSerializer):
+    total_payment_price = serializers.SerializerMethodField()
     total_price = serializers.SerializerMethodField()
     total_profit = serializers.SerializerMethodField()
     total_price_before_discount = serializers.SerializerMethodField()
 
-    shipping_rate = serializers.SerializerMethodField()
     shipping_service = serializers.SerializerMethodField()
 
     address = OrderAddressSerializer()
@@ -232,40 +179,50 @@ class OrderDetailSerializer(serializers.ModelSerializer):
         model = Order
         fields = (
             'id',
-            'status',
+            'slug',
             'transaction_id',
             'tracking_code',
+
+            'delivery_status',
+            'payment_status',
+
             'date_ordered',
             'date_shipped',
             'date_delivered',
+
+            'total_payment_price',
             'total_price',
             'total_profit',
             'total_price_before_discount',
-            'shipping_rate',
+
+            'coupon_effect_price',
 
             'shipping_service',
             'address',
             'items',
         )
 
+    def get_total_payment_price(self, obj):
+        return obj.get_payment_price
+
     def get_total_price(self, obj):
         return obj.get_total_price
 
     def get_total_profit(self, obj):
-        return obj.get_total_profit
+        return obj.get_user_total_profit
 
     def get_total_price_before_discount(self, obj):
         return obj.get_total_price_before_discount
 
-    def get_shipping_rate(self, obj):
-        return obj.shipping_effect_price if obj.shipping_effect_price else 0
-
-    def get_shipping_service(self, obj):
+    def get_shipping_service(self, obj: Order):
         return {
             "image": obj.shipping.shipping_service.image.name,
-            "name": obj.shipping.shipping_service.name
+            "name": obj.shipping.shipping_service.name,
+            "price": obj.shipping_effect_price,
+            "pay_at_destination": obj.shipping.pay_at_destination,
         }
 
     def get_transaction_id(self, obj):
-        transaction = Transaction.objects.get_success().filter(order_id=obj.id).first()
+        transaction = Transaction.objects.filter(order_id=obj.id, is_delete=False,
+                                                 status=TransactionStatus.SUCCESS.name).first()
         return transaction.transaction_id

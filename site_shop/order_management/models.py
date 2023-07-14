@@ -155,14 +155,14 @@ class Order(models.Model):
     @property
     def get_payment_price(self):
 
-        return (self.get_total_price - self.coupon_effect_price) - self.shipping_effect_price
+        return (self.get_total_price - self.coupon_effect_price) + self.shipping_effect_price
 
     @property
     def get_total_price(self):
         amount = 0
         if self.is_paid:
             for item in self.items.filter(variant__is_active=True, product__is_active=True):
-                amount += item.final_price
+                amount += item.final_price if item.final_price else 0
             if self.coupon_effect_price is not None:
                 amount -= self.coupon_effect_price
         else:
@@ -174,7 +174,7 @@ class Order(models.Model):
     def get_total_price_before_discount(self):
         amount = 0
         for item in self.items.all():
-            amount += item.final_price_before_discount
+            amount += item.final_price_before_discount if item.final_price_before_discount else 0
         return amount
 
     @property
@@ -183,7 +183,7 @@ class Order(models.Model):
         profit += self.coupon_effect_price or 0
         if self.is_paid:
             for item in self.items.all():
-                profit += item.final_profit
+                profit += item.final_profit if item.final_profit else 0
         return profit
 
 

@@ -9,8 +9,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from site_api.api_configuration.enums import ResponseMessage
 from site_api.api_configuration.response import BaseResponse
 from site_shop.order_management.models import Order, OrderItem, PaymentStatus
-from site_shop.order_management.serializers import UserPaidOrderListSerializer, OrderDetailSerializer, \
-    CurrentOpenOrderSerializer, CurrentPendingOrderSerializer
+from site_shop.order_management.serializers import \
+    CurrentOpenOrderSerializer, CurrentPendingOrderSerializer, UserPaidOrderSerializer
 from site_shop.product_management.models import Product, ProductVariant
 from site_shop.transaction_management.models import Transaction, TransactionStatus
 
@@ -184,19 +184,18 @@ class RemoveCurrentOrderItemView(APIView):
 
 # Get User All Paid Orders For Profile Section
 class UserPaidOrderListAPIView(ListAPIView):
-    serializer_class = UserPaidOrderListSerializer
-
-    authentication_classes = [JWTAuthentication]
+    serializer_class = UserPaidOrderSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Order.objects.get_paid(user_id=self.request.user.id)
+        return Order.objects.filter(user=self.request.user, is_delete=False,
+                                    payment_status=PaymentStatus.PAID.name).order_by('date_ordered')
 
 
 # Get User Paid Order Detail For Profile Section
 
 class UserPaidOrderDetailAPIView(RetrieveAPIView):
-    serializer_class = OrderDetailSerializer
+    serializer_class = UserPaidOrderSerializer
     lookup_field = 'transaction'
 
     def get_object(self):

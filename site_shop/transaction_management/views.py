@@ -1,5 +1,5 @@
 import json
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 import requests
 from django.conf import settings
@@ -215,7 +215,7 @@ class RequestPaymentSubmitAPIView(APIView):
             current_order.coupon_effect_price = coupon_effect_dif_price
             current_order.shipping_effect_price = current_order.shipping.calculate_price(
                 order_price=order_total_price_before_coupon)
-            current_order.date_ordered = datetime.date.today()
+            current_order.date_ordered = timezone.now()
 
             current_order.save()
 
@@ -424,7 +424,8 @@ class VerifyPaymentAPIView(APIView):
             if response['Status'] == 100:
                 current_order.payment_status = PaymentStatus.PAID.name
                 current_order.save()
-                current_order.ordered_date = datetime.date.today()
+                current_order.date_ordered = timezone.now()
+
                 current_order.delivery_status = DeliveryStatus.PENDING.name
                 current_order.repayment_date_expire = None
                 if current_order.coupon is not None:
