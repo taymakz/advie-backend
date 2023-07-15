@@ -156,6 +156,31 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return obj.image.name
 
 
+class UserFavoriteProductSerializer(serializers.ModelSerializer):
+    is_available_in_stock = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.Product
+        fields = (
+            'id',
+            'image',
+            'title_ir',
+            'url',
+            'is_available_in_stock',
+        )
+
+    def get_url(self, obj):
+        return obj.get_absolute_url()
+
+    def get_image(self, obj):
+        return obj.image.name
+
+    def get_is_available_in_stock(self, obj):
+        return obj.is_available_in_stock
+
+
 class ProductCardSerializer(serializers.ModelSerializer):
     price = serializers.SerializerMethodField()
     special_price = serializers.SerializerMethodField()

@@ -7,5 +7,9 @@ urlpatterns = [
 
     path('product/<int:sku>/', views.ProductDetailAPIView.as_view(), name='product_detail'),
 
+    path('product/user/favorite/list/', views.UserFavoriteProductListAPIView.as_view(), name='product_favorite_list'),
     path('product/user/favorite/', views.UserFavoriteProductsView.as_view(), name='product_favorite'),
+
+    path('product/user/recent/list/', views.UserFavoriteProductListAPIView.as_view(), name='product_recent_list'),
+
 ]

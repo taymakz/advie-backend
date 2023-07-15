@@ -12,7 +12,8 @@ class OrderAdmin(admin.ModelAdmin):
 
 
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ['__str__']
+    list_display = ['__str__', 'refund']
+    list_editable = ['refund']
 
 
 class OrderAddressAdmin(admin.ModelAdmin):

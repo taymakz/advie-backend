@@ -69,7 +69,6 @@ INSTALLED_APPS = [
 
     # Notification Section
     'site_notification.verification_notification',
-    'site_notification.order_notification',
     'site_notification.user_notification',
     'site_notification.announcement_notification',
 

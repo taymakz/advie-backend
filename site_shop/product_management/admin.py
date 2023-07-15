@@ -68,3 +68,4 @@ admin.site.register(models.VariantPrefix)
 admin.site.register(models.Property)
 
 admin.site.register(models.UserFavoriteProducts)
+admin.site.register(models.UserRecentVisitedProduct)

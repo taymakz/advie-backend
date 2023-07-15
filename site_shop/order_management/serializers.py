@@ -3,7 +3,7 @@ from rest_framework import serializers
 from site_shop.order_management.models import OrderAddress, OrderItem, Order
 from site_shop.product_management.serializers import VariantTypeSerializer, ProductVariantSerializer
 from site_shop.shipping_management.serializers import ShippingRateSerializer
-from site_shop.transaction_management.models import Transaction, TransactionStatus
+from site_shop.transaction_management.models import TransactionStatus
 from site_utils.persian.date import model_date_field_convertor
 
 
@@ -121,6 +121,7 @@ class UserPaidOrderItemSerializer(serializers.ModelSerializer):
     product_title_ir = serializers.SerializerMethodField()
     product_title_en = serializers.SerializerMethodField()
     product_image = serializers.SerializerMethodField()
+    is_special = serializers.SerializerMethodField()
     variant = ProductVariantSerializer()
 
     refund_status = serializers.SerializerMethodField()
@@ -137,8 +138,11 @@ class UserPaidOrderItemSerializer(serializers.ModelSerializer):
             'variant',
             'count',
             'refund_status',
+            'is_special',
             'final_price',
             'final_price_before_discount',
+            'final_discount',
+            'final_profit',
         )
 
     def get_variant_type(self, obj):
@@ -159,6 +163,9 @@ class UserPaidOrderItemSerializer(serializers.ModelSerializer):
     def get_product_image(self, obj):
         return obj.product.image.name
 
+    def get_is_special(self, obj):
+        return obj.variant.is_special
+
     def get_refund_status(self, obj: OrderItem):
         return obj.refund.status if obj.refund else None
 
@@ -167,6 +174,7 @@ class UserPaidOrderSerializer(serializers.ModelSerializer):
     total_payment_price = serializers.SerializerMethodField()
     total_price = serializers.SerializerMethodField()
     total_profit = serializers.SerializerMethodField()
+    total_profit_before_discount = serializers.SerializerMethodField()
     total_price_before_discount = serializers.SerializerMethodField()
 
     shipping_service = serializers.SerializerMethodField()
@@ -174,6 +182,7 @@ class UserPaidOrderSerializer(serializers.ModelSerializer):
     address = OrderAddressSerializer()
     items = UserPaidOrderItemSerializer(many=True)
     transaction_id = serializers.SerializerMethodField()
+    repayment_date_expire = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -194,14 +203,18 @@ class UserPaidOrderSerializer(serializers.ModelSerializer):
             'total_payment_price',
             'total_price',
             'total_profit',
+            'total_profit_before_discount',
             'total_price_before_discount',
 
             'coupon_effect_price',
-
+            'repayment_date_expire',
             'shipping_service',
             'address',
             'items',
         )
+
+    def get_repayment_date_expire(self, obj: Order):
+        return model_date_field_convertor(obj.repayment_date_expire)
 
     def get_total_payment_price(self, obj):
         return obj.get_payment_price
@@ -211,6 +224,9 @@ class UserPaidOrderSerializer(serializers.ModelSerializer):
 
     def get_total_profit(self, obj):
         return obj.get_user_total_profit
+
+    def get_total_profit_before_discount(self, obj):
+        return obj.get_user_total_profit_before_discount
 
     def get_total_price_before_discount(self, obj):
         return obj.get_total_price_before_discount
@@ -223,8 +239,9 @@ class UserPaidOrderSerializer(serializers.ModelSerializer):
             "pay_at_destination": obj.shipping.pay_at_destination,
         }
 
-    def get_transaction_id(self, obj):
-        transaction = Transaction.objects.filter(order_id=obj.id, is_delete=False,
-                                                 status=TransactionStatus.SUCCESS.name).first()
+    def get_transaction_id(self, obj: Order):
+        transaction = obj.transactions.filter(is_delete=False, status=TransactionStatus.SUCCESS.name).first()
+        if transaction:
+            return transaction.transaction_id
 
-        return transaction.transaction_id if transaction else None
+        return None
