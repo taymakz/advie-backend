@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
     'storages',
-
+    'django_celery_beat',
     # Local Apps ------------------
 
     # API Section
@@ -114,13 +114,26 @@ elif os.getenv('DATABASE') == "POSTGRES_URL":
         }
     }
 
-if os.environ.get('LOCAL_STORAGE') == 'True':
+if os.environ.get('STORAGE') == 'LOCAL':
 
     MEDIA_URL = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
 
 
-else:
+elif os.environ.get('STORAGE') == 'LIARA':
+    AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    AWS_URL = os.environ.get('AWS_URL')
+    AWS_LOCATION = 'media'
+    MEDIA_URL = f'{AWS_URL}/media/'
+
+elif os.environ.get('STORAGE') == 'FTP':
     storage_host = os.environ.get('STORAGE_HOST')
     storage_port = os.environ.get('STORAGE_PORT')
     storage_user = os.environ.get('STORAGE_USER')
@@ -159,7 +172,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -193,7 +206,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Tehran'
 
 USE_I18N = True
 
@@ -253,3 +267,20 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
+
+CELERY_BROKER_URL = "redis://localhost:6379/10"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/10"
+
+# CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
+# CELERY_RESULT_BACKEND = os.environ.get('CELERY_BROKER_URL')
+CELERY_ACCEPT_CONTENT = ["application/json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_TIMEZONE = "Asia/Tehran"
+CELERY_ENABLE_UTC = False
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.c1.liara.email'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = True

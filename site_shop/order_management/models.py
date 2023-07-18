@@ -11,6 +11,7 @@ from site_shop.coupon_management.models import Coupon
 from site_shop.product_management.models import Product, ProductVariant
 from site_shop.refund_management.models import RefundOrderItem
 from site_shop.shipping_management.models import ShippingRate
+from site_utils.messaging_services.phone_service import send_order_status_phone
 
 
 class OrderAddress(models.Model):
@@ -51,6 +52,7 @@ class Order(models.Model):
     # Status Fields -------------- Start
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, blank=True, null=True)
     delivery_status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, blank=True, null=True)
+    delivery_canceled_reason = models.CharField(max_length=155, blank=True, null=True)
     repayment_date_expire = models.DateTimeField(blank=True, null=True)
     lock_for_payment = models.BooleanField(default=False)
 
@@ -85,26 +87,22 @@ class Order(models.Model):
         super().__init__(*args, **kwargs)
         self.__original_status = self.delivery_status
 
-    def clean_fields(self, exclude=None):
-        super().clean_fields(exclude=exclude)
+    def save(self, *args, **kwargs):
         if self.delivery_status != self.__original_status:
-            if self.delivery_status == DeliveryStatus.PENDING.value:
-                print('Send SMS In ORDER')
-            if self.delivery_status == DeliveryStatus.PROCESSING.value:
-                print('Send SMS In ORDER')
+            if self.delivery_status == DeliveryStatus.PENDING.name:
+                self.send_order_status_notification('tmd3150snfzkgxj')
+            elif self.delivery_status == DeliveryStatus.PROCESSING.name:
+                self.send_order_status_notification('ufk0tlhnubtlsdj')
 
-            elif self.delivery_status == DeliveryStatus.SHIPPED.value:
+            elif self.delivery_status == DeliveryStatus.SHIPPED.name:
                 self.date_shipped = timezone.now()
-                print('Send SMS In ORDER')
-
-            elif self.delivery_status == DeliveryStatus.DELIVERED.value:
+                self.send_order_status_notification('fnhgvsuo2fxg5vn')
+            elif self.delivery_status == DeliveryStatus.DELIVERED.name:
                 self.date_delivered = timezone.now()
-                print('Send SMS In ORDER')
+                print('send put comment sms')
 
             self.date_delivery_status_updated = timezone.now()
-            self._previous_delivery_status = self.delivery_status
-
-    def save(self, *args, **kwargs):
+            self.__original_status = self.delivery_status
 
         if not self.slug:
             self.slug = self.generate_unique_slug()
@@ -128,8 +126,7 @@ class Order(models.Model):
                f"( {self.get_payment_status_display()} ) : ( {self.get_delivery_status_display()} ) "
 
     def send_order_status_notification(self, pattern):
-        # celery_send_order_status_service.delay(to=self.user.phone, pattern=pattern, id=self.transaction)
-        pass
+        send_order_status_phone(to=self.user.phone, pattern=pattern, number=self.slug, track_code=self.tracking_code)
 
     @staticmethod
     def is_valid_shipping_method(user_address: UserAddresses, shipping: ShippingRate):

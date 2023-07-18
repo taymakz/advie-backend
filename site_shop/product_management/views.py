@@ -1,4 +1,4 @@
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -10,8 +10,33 @@ from site_shop.product_management.filters import ProductFilter
 from site_shop.product_management.models import Product, ProductVariant, UserFavoriteProducts, ProductVisit, \
     UserRecentVisitedProduct
 from site_shop.product_management.serializers import ProductDetailSerializer, ProductCardSerializer, \
-    UserFavoriteProductSerializer
+    UserFavoriteProductSerializer, SearchProductSerializer
 from site_utils.http_services.get_client_ip import get_client_ip
+
+
+class SearchProductAPIView(ListAPIView):
+    serializer_class = SearchProductSerializer
+
+    def get_queryset(self):
+        query = self.request.query_params.get('q', '')
+        if len(query) < 3:  # only search if query length is more than 3 characters
+            return None
+        # search for products and categories that match the query
+        product_query = (
+                Q(title_ir__icontains=query) |
+                Q(title_en__icontains=query)
+        )
+
+        products = Product.objects.filter(product_query).distinct()[:10]
+
+        return self.serializer_class(products, many=True).data
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if not queryset:  # if query length is less than or equal to 3, return an empty response
+            return BaseResponse(data={}, status=status.HTTP_204_NO_CONTENT, message=ResponseMessage.SUCCESS.value)
+
+        return BaseResponse(data=queryset, status=status.HTTP_200_OK, message=ResponseMessage.SUCCESS.value)
 
 
 class ProductSearchView(ListAPIView):

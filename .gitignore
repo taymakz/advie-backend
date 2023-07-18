@@ -46,7 +46,9 @@ __pycache__/
 
 # Virtual environment
 venv/
+venvwindows/
 
+celerybeat-schedule
 
 # Media
 media/

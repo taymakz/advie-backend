@@ -1,6 +1,11 @@
+import os
+
+from dotenv import load_dotenv
 from ippanel import Client
 
-api_key = "tiFfLmfYlgQDqrclxgMyx2DnGx9nrSZZBfpLnbd_EQc="
+load_dotenv()
+
+api_key = os.environ.get('FARAZ_SMS_API')
 sms = Client(api_key)
 
 
@@ -10,17 +15,20 @@ def send_otp_phone(to, code):
     }
 
     bulk_id = sms.send_pattern(
-        "vuduuykm0qdri4w",  # pattern code
+        "2k3wp5r73wans40",  # pattern code
         "983000505",  # originator
         to,  # recipient
         pattern_values,  # pattern values
     )
 
 
-def send_order_status_phone(to, id, pattern):
+def send_order_status_phone(to, pattern, number, track_code=None):
     pattern_values = {
-        "id": id,
+        "order_number": str(number),
     }
+
+    if track_code:
+        pattern_values["track_code"] = track_code
 
     bulk_id = sms.send_pattern(
         pattern,  # pattern code

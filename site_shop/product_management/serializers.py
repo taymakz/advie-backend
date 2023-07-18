@@ -256,6 +256,7 @@ class SearchProductSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'title_ir',
+            'title_en',
             'url',
             'image'
         ]

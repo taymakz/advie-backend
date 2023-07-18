@@ -6,6 +6,9 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 
+from site_utils.messaging_services.email_service import send_otp_email
+from site_utils.messaging_services.phone_service import send_otp_phone
+
 
 class VerifyOTPService(models.Model):
     TYPE_OPTIONS = (
@@ -43,15 +46,11 @@ class VerifyOTPService(models.Model):
     def send_otp(self):
 
         if not self.is_expired():
-            if self.type == "PHONE":
-                print(self.code)
-                # SendOTP(to=self.to, code=self.code)
-
-            if self.type == "EMAIL":
-                print(self.code)
-                # send_email(to=self.to, context={'code': self.code})
-            return True
-        return False
+            # send_otp_celery.delay(to=self.to, code=self.code, type=self.type)
+            if self.type == 'PHONE':
+                send_otp_phone(to=self.to, code=self.code)
+            else:
+                send_otp_email(to=self.to, context={'code': self.code})
 
 
 class VerifyNewsletterService(models.Model):
@@ -80,7 +79,7 @@ class VerifyNewsletterService(models.Model):
 
         if not self.is_expired():
             active_link = f"{reverse('activate_newsletter_email', args=[self.activate_link])}"
-
+            # todo
             full_link = request.build_absolute_uri(active_link)
             print(full_link)
             # send_verify_newsletter_email(to=self.email, context={'active_link': full_link})

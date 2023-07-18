@@ -288,7 +288,7 @@ class ProductVariant(models.Model):
 
         if self.stock <= 0:
             self.is_active = False
-        if not self.is_active:
+        if self.pk and not self.is_active:
             baskets_to_delete = self.baskets.filter(
                 ~Q(order__payment_status=OrderModels.PaymentStatus.PAID.name)
             )
