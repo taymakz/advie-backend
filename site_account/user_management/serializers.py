@@ -6,6 +6,7 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer):
     profile = serializers.SerializerMethodField()
     has_password = serializers.SerializerMethodField()
+    notification_count = serializers.SerializerMethodField()
     full_name = serializers.CharField(source='get_full_name')
 
     class Meta:
@@ -23,6 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
             'is_active',
             'verified',
             'has_password',
+            'notification_count',
         )
 
     def get_profile(self, obj):
@@ -30,6 +32,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_has_password(self, obj: User):
         return obj.has_usable_password()
+
+    def get_notification_count(self, obj: User):
+        return obj.notifications.filter(is_delete=False, is_read=False).count()
 
 
 class UserEditProfileSerializer(serializers.ModelSerializer):

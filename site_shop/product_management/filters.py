@@ -20,7 +20,7 @@ class ProductFilter(django_filters.FilterSet):
             user = self.request.user  # Get the current user
             if user.is_authenticated:
                 # Create a new search history instance for the user
-                UserSearchHistory.objects.create(user=user, query=value)
+                UserSearchHistory.objects.create(user=user, search=value)
 
                 # Limit the user's search history to a maximum of 20 records
                 # Delete the oldest records if the limit is exceeded

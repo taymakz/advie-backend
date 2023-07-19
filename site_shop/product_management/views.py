@@ -41,7 +41,7 @@ class SearchProductAPIView(ListAPIView):
 
 class ProductSearchView(ListAPIView):
     permission_classes = [AllowAny]
-
+    authentication_classes = []
     serializer_class = ProductCardSerializer
     queryset = Product.objects.filter(is_active=True).prefetch_related(
         Prefetch('variants', queryset=ProductVariant.objects.filter(is_active=True))
@@ -61,6 +61,8 @@ class ProductDetailAPIView(RetrieveAPIView):
         try:
             product = self.get_object()
             serializer = self.get_serializer(product)
+            print(self.request.user)
+            print(request.user)
             # Add Product to User Recent Visits
             if self.request.user.is_authenticated:
                 new_visit_product_exist = UserRecentVisitedProduct.objects.filter(product_id=product.id,

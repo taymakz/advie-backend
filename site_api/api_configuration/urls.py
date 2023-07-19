@@ -30,10 +30,7 @@ urlpatterns = [
     # Notification Section
     path('', include('site_notification.announcement_notification.urls')),
     path('', include('site_notification.verification_notification.urls')),
-
-    # Settings Section
-    # path('', include('site_setting.website_management.urls')),
-    # path('', include('site_setting.website_banner.urls')),
+    path('', include('site_notification.user_notification.urls')),
 
     # Shop Section
     # Payment Section
