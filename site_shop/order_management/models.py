@@ -7,11 +7,12 @@ from django.utils import timezone
 from site_account.user_addresses.models import UserAddresses
 from site_account.user_management.models import User
 from site_api.api_configuration.enums import ResponseMessage
+from site_notification.user_notification import models as notificationModels
 from site_shop.coupon_management.models import Coupon
+from site_shop.order_management.tasks import send_order_status_celery
 from site_shop.product_management.models import Product, ProductVariant
 from site_shop.refund_management.models import RefundOrderItem
 from site_shop.shipping_management.models import ShippingRate
-from site_utils.messaging_services.phone_service import send_order_status_phone
 
 
 class OrderAddress(models.Model):
@@ -80,6 +81,9 @@ class Order(models.Model):
     date_updated = models.DateTimeField(auto_now=True, editable=False)
     is_delete = models.BooleanField(default=False)
 
+    def get_absolute_url(self):
+        return f"/panel/orders/${self.slug}"
+
     class Meta:
         ordering = ['-date_ordered']
 
@@ -92,9 +96,31 @@ class Order(models.Model):
             if self.delivery_status == DeliveryStatus.PENDING.name:
                 self.send_order_status_notification('tmd3150snfzkgxj')
             elif self.delivery_status == DeliveryStatus.PROCESSING.name:
+                title = f'سفارش {self.slug} شما باموفقیت تایید شد'
+                message = f'سفارش شما تایید و در حال پردازش می باشد همچنین شما می توانید از طریق فشردن لینک زیر جزئیات سفارش خود را مشاهده کنید'
+                link = self.get_absolute_url()
+                # add_notification_to_user_celery.delay(user_id=self.user.id, order_id=self.id,
+                #                                       template=notificationModels.UserNotificationTemplate.ORDER.name,
+                #                                       link=link,
+                #                                       title=title,
+                #                                       message=message)
+                notificationModels.UserNotification.objects.create(user=self.user, order=self,
+                                                                   template=notificationModels.UserNotificationTemplate.ORDER.name,
+                                                                   title=title, message=message, link=link)
                 self.send_order_status_notification('ufk0tlhnubtlsdj')
 
             elif self.delivery_status == DeliveryStatus.SHIPPED.name:
+                title = f'سفارش {self.slug} ارسال شد'
+                message = f'سفارش شما تایید و در حال پردازش می باشد همچنین شما می توانید از طریق فشردن لینک زیر جزئیات سفارش خود را مشاهده کنید'
+                link = self.get_absolute_url()
+                # add_notification_to_user_celery.delay(user_id=self.user.id, order_id=self.id,
+                #                                       template=notificationModels.UserNotificationTemplate.ORDER.name,
+                #                                       link=link,
+                #                                       title=title,
+                #                                       message=message)
+                notificationModels.UserNotification.objects.create(user=self.user, order=self,
+                                                                   template=notificationModels.UserNotificationTemplate.ORDER.name,
+                                                                   title=title, message=message, link=link)
                 self.date_shipped = timezone.now()
                 self.send_order_status_notification('fnhgvsuo2fxg5vn')
             elif self.delivery_status == DeliveryStatus.DELIVERED.name:
@@ -126,7 +152,8 @@ class Order(models.Model):
                f"( {self.get_payment_status_display()} ) : ( {self.get_delivery_status_display()} ) "
 
     def send_order_status_notification(self, pattern):
-        send_order_status_phone(to=self.user.phone, pattern=pattern, number=self.slug, track_code=self.tracking_code)
+        send_order_status_celery.delay(to=self.user.phone, pattern=pattern, number=self.slug,
+                                       track_code=self.tracking_code)
 
     @staticmethod
     def is_valid_shipping_method(user_address: UserAddresses, shipping: ShippingRate):

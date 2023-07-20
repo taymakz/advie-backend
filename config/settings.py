@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 
     # Pages Section
     'site_pages.home_data',
+    'site_pages.panel_data',
 
     # Users Section
     'site_account.user_management',
@@ -156,7 +157,7 @@ CKEDITOR_UPLOAD_PATH = 'contents'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
 
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    # "whitenoise.middleware.WhiteNoiseMiddleware",
 
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",

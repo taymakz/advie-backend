@@ -22,6 +22,7 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     # Pages Section
     path('', include('site_pages.home_data.urls')),
+    path('', include('site_pages.panel_data.urls')),
 
     # Users Section
     path('user/', include('site_account.user_management.urls')),

@@ -1,10 +1,4 @@
 {
   "platform": "django",
-  "app": "api-advie",
-  "disks": [
-    {
-      "name": "disk",
-      "mountTo": "media"
-    }
-  ]
+  "app": "api-advie"
 }

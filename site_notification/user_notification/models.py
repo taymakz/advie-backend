@@ -3,7 +3,6 @@ from enum import Enum
 from django.db import models
 
 from site_account.user_management.models import User
-from site_shop.order_management.models import Order
 from site_shop.product_management.models import Product
 
 
@@ -18,7 +17,9 @@ TEMPLATE_CHOICES = [(status.name, status.value) for status in UserNotificationTe
 
 class UserNotification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications', blank=True, null=True)
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='notifications', blank=True, null=True)
+    order = models.ForeignKey('order_management.Order', on_delete=models.CASCADE,
+                              related_name='notifications', blank=True,
+                              null=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='notifications', blank=True, null=True)
     template = models.CharField(max_length=55, choices=TEMPLATE_CHOICES, blank=True, null=True)
     title = models.CharField(max_length=255, blank=True, null=True)
