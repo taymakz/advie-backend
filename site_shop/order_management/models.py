@@ -9,10 +9,10 @@ from site_account.user_management.models import User
 from site_api.api_configuration.enums import ResponseMessage
 from site_notification.user_notification import models as notificationModels
 from site_shop.coupon_management.models import Coupon
-from site_shop.order_management.tasks import send_order_status_celery
 from site_shop.product_management.models import Product, ProductVariant
 from site_shop.refund_management.models import RefundOrderItem
 from site_shop.shipping_management.models import ShippingRate
+from site_utils.messaging_services.phone_service import send_order_status_phone
 
 
 class OrderAddress(models.Model):
@@ -152,8 +152,9 @@ class Order(models.Model):
                f"( {self.get_payment_status_display()} ) : ( {self.get_delivery_status_display()} ) "
 
     def send_order_status_notification(self, pattern):
-        send_order_status_celery.delay(to=self.user.phone, pattern=pattern, number=self.slug,
-                                       track_code=self.tracking_code)
+        # send_order_status_celery.delay(to=self.user.phone, pattern=pattern, number=self.slug,
+        #                                track_code=self.tracking_code)
+        send_order_status_phone(to=self.user.phone, pattern=pattern, number=self.slug, track_code=self.tracking_code)
 
     @staticmethod
     def is_valid_shipping_method(user_address: UserAddresses, shipping: ShippingRate):

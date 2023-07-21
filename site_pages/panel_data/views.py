@@ -16,7 +16,7 @@ class UserPanelDataView(generics.ListAPIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        user_favorite_count = UserFavoriteProducts.objects.filter(is_delete=False).count()
+        user_favorite_count = UserFavoriteProducts.objects.filter(is_delete=False, user=user).count()
 
         # Fetch orders count based on status
         orders_count = Order.objects.filter(user=user).values('delivery_status').annotate(

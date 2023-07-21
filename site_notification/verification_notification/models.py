@@ -6,8 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 
-from site_utils.messaging_services.email_service import send_otp_email
-from site_utils.messaging_services.phone_service import send_otp_phone
+from site_notification.verification_notification.tasks import send_otp_celery
 
 
 class VerifyOTPService(models.Model):
@@ -46,11 +45,11 @@ class VerifyOTPService(models.Model):
     def send_otp(self):
 
         if not self.is_expired():
-            # send_otp_celery.delay(to=self.to, code=self.code, type=self.type)
-            if self.type == 'PHONE':
-                send_otp_phone(to=self.to, code=self.code)
-            else:
-                send_otp_email(to=self.to, context={'code': self.code})
+            send_otp_celery.delay(to=self.to, code=self.code, type=self.type)
+            # if self.type == 'PHONE':
+            #     send_otp_phone(to=self.to, code=self.code)
+            # else:
+            #     send_otp_email(to=self.to, context={'code': self.code})
 
 
 class VerifyNewsletterService(models.Model):
