@@ -45,7 +45,7 @@ def send_order_status_phone(to, pattern, number, track_code=None):
     }
 
     if track_code:
-        pattern_values["track_code"] = track_code
+        pattern_values["track_code"] = str(track_code)
 
     payload = json.dumps({
         "code": str(pattern),
