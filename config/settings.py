@@ -1,7 +1,8 @@
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 # import sys
 # sys.stdout.reconfigure(encoding='utf-8')
@@ -15,8 +16,10 @@ DEBUG = os.environ.get('DEBUG') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else []
 
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if os.environ.get(
-    'CORS_ALLOWED_ORIGINS') else []
+# CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if os.environ.get(
+#     'CORS_ALLOWED_ORIGINS') else []
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 FRONTEND_URL = os.environ.get('FRONTEND_URL')
 BACKEND_URL = os.environ.get('BACKEND_URL')
@@ -118,6 +121,14 @@ if os.environ.get('STORAGE') == 'LOCAL':
 
     MEDIA_URL = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
+
+
+elif os.environ.get('STORAGE') == 'SUPABASE':
+    DEFAULT_FILE_STORAGE = 'django_storage_supabase.supabase'
+    SUPABASE_API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb3h3ZGdnZGFibWthdXhibHl4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4NzcwMDI1NiwiZXhwIjoyMDAzMjc2MjU2fQ.0qsFiYhydh9q54_bA1aay894XBamKk0y4yQ7EbPVyFU'
+    SUPABASE_URL = "https:ckoxwdggdabmkauxblyx"
+    SUPABASE_ROOT_PATH = '/dir/'
+    MEDIA_URL = f'{SUPABASE_URL}/media/'
 
 
 elif os.environ.get('STORAGE') == 'LIARA':
