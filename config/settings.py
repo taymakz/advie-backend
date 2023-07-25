@@ -1,8 +1,7 @@
 import os
 from datetime import timedelta
-from pathlib import Path
-
 from dotenv import load_dotenv
+from pathlib import Path
 
 # import sys
 # sys.stdout.reconfigure(encoding='utf-8')
@@ -157,7 +156,7 @@ CKEDITOR_UPLOAD_PATH = 'contents'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
 
-    # "whitenoise.middleware.WhiteNoiseMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
