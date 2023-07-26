@@ -40,10 +40,8 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
-    'drf_yasg',
     'corsheaders',
     'storages',
-    'django_celery_beat',
     # Local Apps ------------------
 
     # API Section
