@@ -1,4 +1,4 @@
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch, Q, Count
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -43,9 +43,19 @@ class ProductSearchView(ListAPIView):
     permission_classes = [AllowAny]
     authentication_classes = []
     serializer_class = ProductCardSerializer
-    queryset = Product.objects.filter(is_active=True).prefetch_related(
+    queryset = Product.objects.prefetch_related(
         Prefetch('variants', queryset=ProductVariant.objects.filter(is_active=True))
+    ).annotate(
+        variants_count=Count(
+            'variants__stock',
+            filter=Q(variants__is_active=True)
+        )
+    ).filter(
+        is_active=True
+    ).order_by(
+        '-variants_count'
     )
+
     pagination_class = PaginationApiResponse
     filterset_class = ProductFilter
 
