@@ -1,4 +1,4 @@
-from django.db.models import Prefetch, Q, Count
+from django.db.models import Prefetch, Q, Count, Case, When, F, IntegerField
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -53,7 +53,12 @@ class ProductSearchView(ListAPIView):
     ).filter(
         is_active=True
     ).order_by(
-        '-variants_count'
+        '-variants_count',
+        Case(
+            When(variants_count=0, then=F('id')),  # This will order the zero-count variants last
+            default=0,
+            output_field=IntegerField()
+        )
     )
 
     pagination_class = PaginationApiResponse

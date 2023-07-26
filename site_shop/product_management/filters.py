@@ -1,5 +1,5 @@
 import django_filters
-from django.db.models import Q, Max, Min, Sum
+from django.db.models import Q, Max, Min, Sum, Count, Case, When, IntegerField, F
 from django.utils import timezone
 
 from site_account.user_management.models import UserSearchHistory
@@ -56,18 +56,32 @@ class ProductFilter(django_filters.FilterSet):
         return queryset
 
     def filter_sort(self, queryset, name, value):
-        if value:
+        if value in ['1', '2', '3', '4']:
             if value == '1':
-                return queryset.order_by('-date_created')
+                queryset.order_by('-date_created')
             elif value == '2':
-                return queryset.annotate(
+                queryset.annotate(
                     order_count=Sum(
                         'baskets__count'
                     )).order_by('-order_count', '-date_created')
             elif value == '3':
-                return queryset.annotate(highest_price=Max('variants__price')).order_by('-highest_price')
+                queryset.annotate(highest_price=Max('variants__price')).order_by('-highest_price')
             elif value == '4':
-                return queryset.annotate(lowest_price=Min('variants__price')).order_by('lowest_price')
+                queryset.annotate(lowest_price=Min('variants__price')).order_by('lowest_price')
+
+            return queryset.annotate(
+                variants_count=Count(
+                    'variants__stock',
+                    filter=Q(variants__is_active=True)
+                )
+            ).order_by(
+                '-variants_count',
+                Case(
+                    When(variants_count=0, then=F('id')),
+                    default=0,
+                    output_field=IntegerField()
+                )
+            )
 
         return queryset
 
